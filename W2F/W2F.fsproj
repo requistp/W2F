@@ -1,0 +1,30 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp3.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Common\CommonFunctions.fs" />
+    <Compile Include="Common\CommonTypes.fs" />
+    <Compile Include="Common\CalendarTimings.fs" />
+    <Compile Include="Common\LocationFunctions.fs" />
+    <Compile Include="Components\ComponentEnums.fs" />
+    <Compile Include="Components\FoodComponent.fs" />
+    <Compile Include="Components\EatingComponent.fs" />
+    <Compile Include="Components\FormComponent.fs" />
+    <Compile Include="Components\MatingComponent.fs" />
+    <Compile Include="Components\MovementComponent.fs" />
+    <Compile Include="Components\TerrainComponent.fs" />
+    <Compile Include="Components\PlantGrowthComponent.fs" />
+    <Compile Include="Components\ControllerComponent.fs" />
+    <Compile Include="Components\VisionComponent.fs" />
+    <Compile Include="Components\Component.fs" />
+    <Compile Include="Entities.fs" />
+    <Compile Include="Game.fs" />
+    <Compile Include="Renderer.fs" />
+    <Compile Include="Program.fs" />
+  </ItemGroup>
+
+</Project>
