@@ -33,7 +33,7 @@ type FoodTypes =
 
 type FoodComponent = 
     { 
-        //ID : ComponentID
+        ID : ComponentID
         EntityID : EntityID
         FoodType : FoodTypes
         Quantity : int

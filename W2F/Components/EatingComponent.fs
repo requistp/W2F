@@ -7,7 +7,7 @@ open System
 
 type EatingComponent = 
     { 
-        //ID : ComponentID
+        ID : ComponentID
         EntityID : EntityID
         Calories : int
         CaloriesPerDay : int

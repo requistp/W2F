@@ -45,17 +45,17 @@ let ToVision (Vision c) = c
 //    | Terrain d -> Terrain { d with ID = idGen(); EntityID = newEID }
 //    | Vision d -> Vision { d with ID = idGen(); EntityID = newEID }
 
-//let GetComponentID (c:Component) =
-//    match c with 
-//    | Controller d -> d.ID
-//    | Eating d -> d.ID
-//    | Food d -> d.ID
-//    | Form d -> d.ID
-//    | Mating d -> d.ID
-//    | Movement d -> d.ID
-//    | PlantGrowth d -> d.ID
-//    | Terrain d -> d.ID
-//    | Vision d -> d.ID
+let getComponentID (c:Component) =
+    match c with 
+    | Controller d -> d.ID
+    | Eating d -> d.ID
+    | Food d -> d.ID
+    | Form d -> d.ID
+    | Mating d -> d.ID
+    | Movement d -> d.ID
+    | PlantGrowth d -> d.ID
+    | Terrain d -> d.ID
+    | Vision d -> d.ID
 
 let getComponentType (c:Component) =
     match c with

@@ -9,7 +9,7 @@ open System
 let rec gameLoop (game:Game) = 
     // Display Map (last frame)
     renderWorld game
-
+    
     // Get input for all entities
         //if Exit then Exit
         
@@ -28,9 +28,12 @@ let game =
     |> Game.makeGrass 5u
     |> Game.makeRabbits true 3u
 
-//printfn "%i %i" game.Entities.Entities.Count game.Entities.MaxEntityID.ToUint32
+//renderWorld game
 
 gameLoop game
+
+
+
 
 
 (*

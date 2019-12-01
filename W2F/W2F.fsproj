@@ -22,6 +22,7 @@
     <Compile Include="Components\VisionComponent.fs" />
     <Compile Include="Components\Component.fs" />
     <Compile Include="Entities.fs" />
+    <Compile Include="Systems\ControllerSystem.fs" />
     <Compile Include="Game.fs" />
     <Compile Include="Renderer.fs" />
     <Compile Include="Program.fs" />

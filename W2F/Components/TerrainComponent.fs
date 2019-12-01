@@ -9,7 +9,7 @@ type TerrainTypes =
 
 type TerrainComponent = 
     { 
-        //ID : ComponentID
+        ID : ComponentID
         EntityID : EntityID
         Terrain : TerrainTypes
     } 

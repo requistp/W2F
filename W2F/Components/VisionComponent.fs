@@ -10,7 +10,7 @@ type VisionCalculationTypes =
 
 type VisionComponent = 
     { 
-        //ID : ComponentID
+        ID : ComponentID
         EntityID : EntityID
         LocationsWithinRange : Location[]                // Locations within range--regardless of being blocked/visible/etc.
         Range : int16

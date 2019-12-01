@@ -4,7 +4,7 @@ open TerrainComponent
 
 type PlantGrowthComponent = 
     { 
-        //ID : ComponentID
+        ID : ComponentID
         EntityID : EntityID
         GrowsInTerrain : TerrainTypes[]
         RegrowRate : float

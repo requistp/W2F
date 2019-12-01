@@ -17,20 +17,24 @@ let renderWorld (game:Game) : unit=
 
     let selectForm (fds:FormComponent[]) = 
         fds
-        |> Array.sortByDescending (fun f -> f.EntityID)
+        |> Array.sortByDescending (fun f -> f.ID)
         |> Array.head
 
-    //mapLocations game.MapSize
-    //|> Array.iter (fun (l:Location) -> 
-    //    let fd = selectForm (allForms.Item l)
+    mapLocations game.MapSize
+    |> Array.iter (fun (l:Location) -> 
+        let fd = selectForm (allForms.Item l)
         
-    //    System.Console.SetCursorPosition(int l.X, int l.Y)
+        System.Console.SetCursorPosition(int l.X, int l.Y)
         
-    //    System.Console.Write(fd.Symbol)
-    //    )
+        System.Console.Write(fd.Symbol)
+        )
 
     System.Console.SetCursorPosition(0, int game.MapSize.Y + 1)
     printfn "Round: %i" game.Round.ToUint32
+
+
+
+
 
     //let viewSizeX = Math.Clamp(100s,5s,game.MapSize.X)
     //let viewSizeY = Math.Clamp(100s,5s,game.MapSize.Y)

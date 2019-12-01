@@ -3,7 +3,7 @@ open CommonTypes
 
 type FormComponent = 
     { 
-        //ID : ComponentID
+        ID : ComponentID
         EntityID : EntityID
         Born : RoundNumber
         CanSeePast : bool

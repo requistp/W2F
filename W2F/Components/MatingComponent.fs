@@ -23,7 +23,7 @@ type Species =
 
 type MatingComponent = 
     { 
-        //ID : ComponentID
+        ID : ComponentID
         EntityID : EntityID
         ChanceOfReproduction : float
         LastMatingAttempt : RoundNumber

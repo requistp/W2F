@@ -10,11 +10,11 @@ let castEnumToStringArray<'a> = Enum.GetNames(typeof<'a>)
 
 let random = Random(System.DateTime.Now.DayOfYear*1000000 + System.DateTime.Now.Hour*10000000 + System.DateTime.Now.Minute*100000 + System.DateTime.Now.Second*1000 + System.DateTime.Now.Millisecond)
 
-//let ArrayContentsMatch (a:'a[]) (b:'a[]) = 
-//    match a.Length = b.Length with
-//    | false -> false
-//    | true -> 
-//        (a |> Array.fold (fun s t -> s |> Array.filter (fun e -> e <> t )) b) = [||]
+let arrayContentsMatch (a:'a[]) (b:'a[]) = 
+    match a.Length = b.Length with
+    | false -> false
+    | true -> 
+        (a |> Array.fold (fun s t -> s |> Array.filter (fun e -> e <> t )) b) = [||]
 
 //let MapKeys(map: Map<'K,'V>) =
 //    seq {

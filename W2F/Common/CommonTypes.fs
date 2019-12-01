@@ -5,6 +5,9 @@ open System
 
 type ComponentID = 
     | ComponentID of uint32
+    static member (+) (ComponentID m1, ComponentID m2) = ComponentID(m1 + m2)
+    static member (+) (ComponentID m1, m2:uint32) = ComponentID(m1 + m2)
+    static member (+) (m1:uint32, ComponentID m2) = ComponentID(m1 + m2)
     member me.ToUint32 = 
         let (ComponentID v) = me
         v

@@ -30,6 +30,7 @@ type Game =
 let createTerrain (game:Game) =
     let addTerrain l =         
         let eid = game.Entities.MaxEntityID + 1u
+        let cid = game.Entities.MaxComponentID
         let t = 
             match random.Next(1,50) with
             | 1 -> Rock
@@ -40,8 +41,8 @@ let createTerrain (game:Game) =
             | _ -> true            
         let mutable baseTerrain =
             [| 
-                Form { EntityID = eid; Born = RoundNumber(0u); CanSeePast = canSeePast; IsPassable = terrain_IsPassable t; Name = t.ToString(); Symbol = terrain_Symbol t; Location = l }
-                Terrain { EntityID = eid; Terrain = t }
+                Form { ID = cid + 1u; EntityID = eid; Born = RoundNumber(0u); CanSeePast = canSeePast; IsPassable = terrain_IsPassable t; Name = t.ToString(); Symbol = terrain_Symbol t; Location = l }
+                Terrain { ID = cid + 2u; EntityID = eid; Terrain = t }
             |] 
             // I left this mechanic in place because there will be some component that is appropriate to add to Terrain--like a burrow
             //match food.IsSome with
@@ -55,10 +56,11 @@ let createTerrain (game:Game) =
 let makeGrass (n:uint32) (game:Game) =
     let make (l:Location) =
         let eid = game.Entities.MaxEntityID + 1u
+        let cid = game.Entities.MaxComponentID
         [| 
-            Food { EntityID = eid; FoodType = Food_Carrot; Quantity = 20; QuantityMax = 20 }
-            Form { EntityID = eid; Born = RoundNumber(0u); CanSeePast = true; IsPassable = true; Name = Food_Carrot.ToString(); Symbol = Food_Carrot.Symbol.Value; Location = l }
-            PlantGrowth { EntityID = eid; GrowsInTerrain = [|Dirt|]; RegrowRate = 0.1; ReproductionRate = 0.25; ReproductionRange = 5; ReproductionRequiredFoodQuantity = 0.75 }
+            Food { ID = cid + 1u; EntityID = eid; FoodType = Food_Carrot; Quantity = 20; QuantityMax = 20 }
+            Form { ID = cid + 2u; EntityID = eid; Born = RoundNumber(0u); CanSeePast = true; IsPassable = true; Name = Food_Carrot.ToString(); Symbol = Food_Carrot.Symbol.Value; Location = l }
+            PlantGrowth { ID = cid + 3u; EntityID = eid; GrowsInTerrain = [|Dirt|]; RegrowRate = 0.1; ReproductionRate = 0.25; ReproductionRange = 5; ReproductionRequiredFoodQuantity = 0.75 }
         |] 
     //start
     match n with 
@@ -70,10 +72,11 @@ let makeGrass (n:uint32) (game:Game) =
 let makeRabbits (firstIsHuman:bool) (n:uint32) (game:Game) = 
     let make (l:Location) (i:uint32) = 
         let eid = game.Entities.MaxEntityID + 1u
+        let cid = game.Entities.MaxComponentID
         let controller = 
             match n with
-            | 1u -> Controller { EntityID = eid; ControllerType = (if firstIsHuman then Keyboard else AI_Random); CurrentAction = Idle; CurrentActions = [|Idle|]; PotentialActions = [|Idle|] }
-            | _ -> Controller { EntityID = eid; ControllerType = AI_Random; CurrentAction = Idle; CurrentActions = [|Idle|]; PotentialActions = [|Idle|] }
+            | 1u -> Controller { ID = cid + 1u; EntityID = eid; ControllerType = (if firstIsHuman then Keyboard else AI_Random); CurrentAction = Idle; CurrentActions = [|Idle|]; PotentialActions = [|Idle|] }
+            | _ -> Controller { ID = cid + 1u; EntityID = eid; ControllerType = AI_Random; CurrentAction = Idle; CurrentActions = [|Idle|]; PotentialActions = [|Idle|] }
         let matingStatus = if i = 1u || random.Next(0,2) = 0 then Male else Female
         let symbol = if matingStatus = Male then 'R' else 'r' // Handy for debugging: n.ToString().ToCharArray().[0]
         let visionRange = 10s
@@ -83,11 +86,11 @@ let makeRabbits (firstIsHuman:bool) (n:uint32) (game:Game) =
         let baseBunny = 
             [|
                 controller
-                Eating { EntityID = eid; Calories = 150; CaloriesPerDay = 300; Foods = [|Food_Carrot;Food_Grass|]; Quantity = 75; QuantityMax = 150; QuantityPerAction = 1 }
-                Form { EntityID = eid; Born = RoundNumber(0u); CanSeePast = true; IsPassable = true; Name = "rabbit"; Symbol = symbol; Location = l }
-                Mating { EntityID = eid; ChanceOfReproduction = 0.9; LastMatingAttempt = RoundNumber(0u); MatingStatus = matingStatus; Species = Rabbit }
-                Movement { EntityID = eid; MovesPerTurn = 1 }
-                Vision { EntityID = eid; LocationsWithinRange = visionMap; Range = visionRange; RangeTemplate = rangeTemplate; ViewedHistory = Map.empty; VisibleLocations = Map.empty; VisionCalculationType = visionCalculationType }
+                Eating { ID = cid + 2u; EntityID = eid; Calories = 150; CaloriesPerDay = 300; Foods = [|Food_Carrot;Food_Grass|]; Quantity = 75; QuantityMax = 150; QuantityPerAction = 1 }
+                Form { ID = cid + 3u; EntityID = eid; Born = RoundNumber(0u); CanSeePast = true; IsPassable = true; Name = "rabbit"; Symbol = symbol; Location = l }
+                Mating { ID = cid + 4u; EntityID = eid; ChanceOfReproduction = 0.9; LastMatingAttempt = RoundNumber(0u); MatingStatus = matingStatus; Species = Rabbit }
+                Movement { ID = cid + 5u; EntityID = eid; MovesPerTurn = 1 }
+                Vision { ID = cid + 6u; EntityID = eid; LocationsWithinRange = visionMap; Range = visionRange; RangeTemplate = rangeTemplate; ViewedHistory = Map.empty; VisibleLocations = Map.empty; VisionCalculationType = visionCalculationType }
             |]
         baseBunny
     //start

@@ -4,7 +4,7 @@ open CommonTypes
 
 type MovementComponent = 
     {
-        //ID : ComponentID
+        ID : ComponentID
         EntityID : EntityID
         MovesPerTurn : int 
     }

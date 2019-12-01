@@ -38,7 +38,7 @@ type ActionTypes =
 
 type ControllerComponent = 
     { 
-        //ID : ComponentID
+        ID : ComponentID
         EntityID : EntityID
         ControllerType : ControllerTypes
         CurrentAction : ActionTypes
