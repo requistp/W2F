@@ -13,9 +13,8 @@ open TerrainComponent
 open VisionComponent
 
 
-let createTerrain (game:Game) =
-    let addTerrain l (cid:ComponentID) =         
-        let eid = game.Entities.MaxEntityID + 1u
+let createTerrain (game:Game) : Game =
+    let make l (eid:EntityID) (cid:ComponentID) = 
         let t = 
             match random.Next(1,50) with
             | 1 -> Rock
@@ -36,7 +35,12 @@ let createTerrain (game:Game) =
         baseTerrain
     //start
     mapLocations game.MapSize
-    |> Array.fold (fun (g:Game) l -> { g with Entities = Entities.createEntity (g.Entities) (addTerrain l g.Entities.MaxComponentID) } ) game
+    |> Array.fold (fun (g:Game) l -> 
+        { 
+            g with 
+                Entities = Entities.createEntity (g.Entities) (make l (g.Entities.MaxEntityID + 1u) g.Entities.MaxComponentID) 
+                Log = LogManager.log_CreateEntity g.Log "Ok" "Game" "createTerrain" (g.Entities.MaxEntityID + 1u)
+        } ) game
 
 let incrementRound (game:Game) : Game =
     {
@@ -44,9 +48,8 @@ let incrementRound (game:Game) : Game =
             Round = game.Round + 1u 
     }
 
-let makeGrass (n:uint32) (game:Game) =
-    let make (l:Location) (cid:ComponentID) =
-        let eid = game.Entities.MaxEntityID + 1u
+let makeGrass (n:uint32) (game:Game) : Game =
+    let make (l:Location) (eid:EntityID) (cid:ComponentID) =
         [| 
             Food { ID = cid + 1u; EntityID = eid; FoodType = Food_Carrot; Quantity = 20; QuantityMax = 20 }
             Form { ID = cid + 2u; EntityID = eid; Born = RoundNumber(0u); CanSeePast = true; IsPassable = true; Name = Food_Carrot.ToString(); Symbol = Food_Carrot.Symbol.Value; Location = l }
@@ -57,11 +60,15 @@ let makeGrass (n:uint32) (game:Game) =
     | 0u -> game
     | _ -> 
         [|1u..n|] 
-        |> Array.fold (fun (g:Game) i -> { g with Entities = Entities.createEntity (g.Entities) (make (Location.random game.MapSize) g.Entities.MaxComponentID) } ) game
+        |> Array.fold (fun (g:Game) i -> 
+            { 
+                g with 
+                    Entities = Entities.createEntity (g.Entities) (make (Location.random game.MapSize) (g.Entities.MaxEntityID + 1u) g.Entities.MaxComponentID) 
+                    Log = LogManager.log_CreateEntity g.Log "Ok" "Game" "makeGrass" (g.Entities.MaxEntityID + 1u)
+            } ) game
 
-let makeRabbits (firstIsHuman:bool) (total:uint32) (game:Game) = 
-    let make (l:Location) (cid:ComponentID) (i:uint32) = 
-        let eid = game.Entities.MaxEntityID + 1u
+let makeRabbits (firstIsHuman:bool) (total:uint32) (game:Game) : Game = 
+    let make (l:Location) (eid:EntityID) (cid:ComponentID) (i:uint32) = 
         let controller = 
             match i with
             | 1u -> Controller { ID = cid + 1u; EntityID = eid; ControllerType = (if firstIsHuman then Keyboard else AI_Random); CurrentAction = Idle; CurrentActions = [|Idle|]; PotentialActions = [|Idle|] }
@@ -87,9 +94,14 @@ let makeRabbits (firstIsHuman:bool) (total:uint32) (game:Game) =
     | 0u -> game
     | _ -> 
         [|1u..total|]
-        |> Array.fold (fun (g:Game) i -> { g with Entities = Entities.createEntity (g.Entities) (make (Location.random game.MapSize) g.Entities.MaxComponentID i) }) game
+        |> Array.fold (fun (g:Game) i -> 
+            { 
+                g with 
+                    Entities = Entities.createEntity (g.Entities) (make (Location.random game.MapSize) (g.Entities.MaxEntityID + 1u) g.Entities.MaxComponentID i) 
+                    Log = LogManager.log_CreateEntity g.Log "Ok" "Game" "makeRabbits" (g.Entities.MaxEntityID + 1u)
+            } ) game
 
-let setMapSize (l:Location) (game:Game) =
+let setMapSize (l:Location) (game:Game) : Game =
     {
         game with MapSize = l
     }

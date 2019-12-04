@@ -10,6 +10,7 @@
     <Compile Include="Common\CommonTypes.fs" />
     <Compile Include="Common\CalendarTimings.fs" />
     <Compile Include="Common\LocationFunctions.fs" />
+    <Compile Include="Common\Logging.fs" />
     <Compile Include="Components\ComponentEnums.fs" />
     <Compile Include="Components\FoodComponent.fs" />
     <Compile Include="Components\EatingComponent.fs" />
@@ -22,6 +23,7 @@
     <Compile Include="Components\VisionComponent.fs" />
     <Compile Include="Components\Component.fs" />
     <Compile Include="Systems\EntityAndGameTypes.fs" />
+    <Compile Include="Systems\LogManager.fs" />
     <Compile Include="Systems\Entities.fs" />
     <Compile Include="Systems\ControllerSystem.fs" />
     <Compile Include="Game.fs" />

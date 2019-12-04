@@ -28,6 +28,7 @@ type Game =
     {
         Entities : Entities
         ExitGame : bool
+        Log : string[]
         MapSize : Location
         Round : RoundNumber
     }
@@ -35,6 +36,7 @@ type Game =
         {
             Entities = Entities.empty
             ExitGame = false
+            Log = Array.empty
             MapSize = Location.empty
             Round = RoundNumber(0u)
         }

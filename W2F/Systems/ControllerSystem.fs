@@ -8,7 +8,7 @@ open EntityAndGameTypes
 open System
 
 
-let getInputForAllEntities (game:Game) (*log:agent_GameLog*) (*renderer:(EntityManager->EntityID->unit) option*) = 
+let getInputForAllEntities (game:Game) (*log:agent_GameLog*) (*renderer:(EntityManager->EntityID->unit) option*) : Game = 
     let awaitKeyboardInput (cc:ControllerComponent) =
         let mutable _action = None            
         // Uncomment for Entity-view... 
@@ -20,7 +20,7 @@ let getInputForAllEntities (game:Game) (*log:agent_GameLog*) (*renderer:(EntityM
             match k.Key with 
             | ConsoleKey.Escape -> Some ExitGame
             | ConsoleKey.Spacebar -> Some Idle
-            | ConsoleKey.E -> if actionIsAllowed cc Eat  then Some Eat else None
+            | ConsoleKey.E -> if actionIsAllowed cc Eat  then Some Eat  else None
             | ConsoleKey.M -> if actionIsAllowed cc Mate then Some Mate else None
             | ConsoleKey.RightArrow -> if actionIsAllowed cc Move_East  then Some Move_East  else None
             | ConsoleKey.UpArrow    -> if actionIsAllowed cc Move_North then Some Move_North else None
@@ -72,17 +72,22 @@ let getInputForAllEntities (game:Game) (*log:agent_GameLog*) (*renderer:(EntityM
         |> Array.Parallel.map getCurrentActions
         |> Array.Parallel.partition (fun c -> c.ControllerType = Keyboard)
         |> handleSplitInputTypes
-    let exitGame = 
-        newControllers 
-        |> Array.exists (fun c -> c.CurrentAction = ExitGame)
     {
         game with
             Entities = 
                 newControllers
-                |> Array.Parallel.map Controller
+                |> Array.map Controller
                 |> Entities.updateComponents game.Entities 
 
-            ExitGame = exitGame
+            ExitGame = 
+                newControllers 
+                |> Array.exists (fun c -> c.CurrentAction = ExitGame)
+
+            Log =
+                newControllers
+                |> Array.fold (fun log c -> 
+                    LogManager.log_ComponentUpdate log "Ok" "Controller System" "getInputForAllEntities" c.EntityID c.ID (Some (c.CurrentAction,c.CurrentActions))
+                    ) game.Log
     }
 
 

@@ -24,7 +24,7 @@ let private addComponentTypes (start:Map<ComponentTypes,ComponentID[]>) (cts:Com
 let private addLocation (start:Map<Location,ComponentID[]>) (cts:Component[]) = 
     cts 
     |> Array.filter (fun (c:Component) -> getComponentType c = FormComponent)
-    |> Array.Parallel.map ToForm
+    |> Array.map ToForm
     |> Array.fold (fun (m:Map<Location,ComponentID[]>) (f:FormComponent) ->
         map_AppendValueToArrayUnique m f.Location f.ID
         ) start
@@ -32,7 +32,7 @@ let private addLocation (start:Map<Location,ComponentID[]>) (cts:Component[]) =
 let private moveLocations (ent:Entities) (cts:Component[]) = 
     cts 
     |> Array.filter (fun (c:Component) -> getComponentType c = FormComponent)
-    |> Array.Parallel.map ToForm
+    |> Array.map ToForm
     |> Array.fold (fun (m:Map<Location,ComponentID[]>) (f:FormComponent) ->
         let (Form oldF) = ent.Components.Item f.ID
         match (oldF = f) with

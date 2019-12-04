@@ -10,23 +10,18 @@ let rec gameLoop (game:Game) =
     Renderer.renderRound game
 
     // Get input for all entities
-    let g = ControllerSystem.getInputForAllEntities game
-       
-    // Exit or Continue Game Loop
-    match g.ExitGame with
-    | true -> ()
-    | false -> 
+    game
+    |> ControllerSystem.getInputForAllEntities
+    |> function
+    | g when g.ExitGame -> ()
+    | g ->
         g
         // Run systems
 
-        // Write log
 
-        // Increase round
+        |> LogManager.write
         |> Game.incrementRound
-
-        // Loop
         |> gameLoop
-
 
 Game.empty
 |> Game.setMapSize { X = 80s; Y = 30s; Z = 1s }
@@ -38,3 +33,19 @@ Game.empty
 
 
 
+
+(*
+let g = ControllerSystem.getInputForAllEntities game
+
+// Exit or Continue Game Loop
+match g.ExitGame with
+| true -> ()
+| false -> 
+    g
+    // Run systems
+
+
+    |> LogManager.write
+    |> Game.incrementRound
+    |> gameLoop
+    *)
