@@ -9,6 +9,7 @@ type ControllerTypes =
 
 type ActionTypes = 
     | Eat
+    | ExitGame
     | Idle
     | Mate
     | Move_East

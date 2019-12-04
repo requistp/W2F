@@ -1,50 +1,40 @@
 ﻿open CommonFunctions
 open CommonTypes
-open Entities
-open Game
-open Renderer
+open EntityAndGameTypes
 open System
 
 
 let rec gameLoop (game:Game) = 
-    // Display Map (last frame)
-    renderWorld game
-    
+    // Display Game
+    Renderer.renderWorld game
+    Renderer.renderRound game
+
     // Get input for all entities
-        //if Exit then Exit
-        
-    // Run systems
+    let g = ControllerSystem.getInputForAllEntities game
+       
+    // Exit or Continue Game Loop
+    match g.ExitGame with
+    | true -> ()
+    | false -> 
+        g
+        // Run systems
 
-    // Write log
+        // Write log
 
-    // Loop // Increase round
-    gameLoop { game with Round = game.Round + 1u }
+        // Increase round
+        |> Game.incrementRound
 
-
-let game =
-    Game.empty
-    |> Game.setMapSize { X = 80s; Y = 30s; Z = 1s }
-    |> Game.createTerrain 
-    |> Game.makeGrass 5u
-    |> Game.makeRabbits true 3u
-
-//renderWorld game
-
-gameLoop game
+        // Loop
+        |> gameLoop
 
 
+Game.empty
+|> Game.setMapSize { X = 80s; Y = 30s; Z = 1s }
+|> Game.createTerrain 
+|> Game.makeGrass 5u
+|> Game.makeRabbits false 5u
+|> gameLoop
 
 
 
-(*
-    
-let rec gameLoop level =
-    let playerCommand = getPlayerCommand level.playerId
-    let turnLevel = level |> runTurn playerCommand
-    let player = level |> expectActor turnLevel.playerId
-    if not (isAlive player) then
-        ()
-    else
-        render turnLevel
-        gameLoop turnLevel
-*)
+

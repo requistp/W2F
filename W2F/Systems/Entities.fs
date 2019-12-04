@@ -3,31 +3,16 @@ open CommonFunctions
 open CommonTypes
 open Component
 open ComponentEnums
+open EntityAndGameTypes
 open FormComponent
-
-type Entities = 
-    {
-        Components : Map<ComponentID,Component>
-        ComponentTypes : Map<ComponentTypes,ComponentID[]>
-        Entities : Map<EntityID,ComponentID[]>
-        Locations : Map<Location,ComponentID[]>
-        MaxComponentID : ComponentID
-        MaxEntityID : EntityID
-    }
-    static member empty = 
-        {
-            Components = Map.empty
-            ComponentTypes = Map.empty
-            Entities = Map.empty
-            Locations = Map.empty
-            MaxComponentID = ComponentID(0u)
-            MaxEntityID = EntityID(0u)
-        }
+        
 
 let private addComponents (start:Map<ComponentID,Component>) (cts:Component[]) =
     cts
     |> Array.fold (fun (m:Map<ComponentID,Component>) (c:Component) -> 
-        m.Add(getComponentID c,c)
+        match (m.ContainsKey (getComponentID c)) with 
+        | true -> m.Remove(getComponentID c).Add(getComponentID c,c)
+        | false -> m.Add(getComponentID c,c)
         ) start
 
 let private addComponentTypes (start:Map<ComponentTypes,ComponentID[]>) (cts:Component[]) =
@@ -44,16 +29,19 @@ let private addLocation (start:Map<Location,ComponentID[]>) (cts:Component[]) =
         map_AppendValueToArrayUnique m f.Location f.ID
         ) start
 
-let private moveLocation (start:Map<Location,ComponentID[]>) (cts:Component[]) = 
+let private moveLocations (ent:Entities) (cts:Component[]) = 
     cts 
     |> Array.filter (fun (c:Component) -> getComponentType c = FormComponent)
     |> Array.Parallel.map ToForm
     |> Array.fold (fun (m:Map<Location,ComponentID[]>) (f:FormComponent) ->
-        //get old form
-        //check if location is the same
-        //move if needed
-        map_AppendValueToArrayUnique m f.Location f.ID
-        ) start
+        let (Form oldF) = ent.Components.Item f.ID
+        match (oldF = f) with
+        | true -> m
+        | false -> 
+            map_AppendValueToArrayUnique (map_RemoveValueFromArray m oldF.Location oldF.ID) f.Location f.ID
+        ) ent.Locations
+
+//---------------------------------------------------------------------------------------
 
 let createEntity (ent:Entities) (cts:Component[]) = 
     {
@@ -87,12 +75,7 @@ let getLocationMap (ent:Entities) =
 let updateComponents (ent:Entities) (cts:Component[]) = 
     {
         ent with
-            Components = 
-                cts
-                |> Array.fold (fun (m:Map<ComponentID,Component>) (c:Component) -> 
-                    m.Remove(getComponentID c).Add(getComponentID c,c)
-                    ) ent.Components
-            Locations =
-                ent.Locations
+            Components = addComponents ent.Components cts
+            Locations = moveLocations ent cts
     }
 

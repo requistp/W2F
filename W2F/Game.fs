@@ -4,7 +4,7 @@ open CommonTypes
 open Component
 open ControllerComponent
 open EatingComponent
-open Entities
+open EntityAndGameTypes
 open FoodComponent
 open FormComponent
 open LocationFunctions
@@ -13,24 +13,9 @@ open TerrainComponent
 open VisionComponent
 
 
-type Game = 
-    {
-        Entities : Entities
-        MapSize : Location
-        Round : RoundNumber
-    }
-    static member empty = 
-        {
-            Entities = Entities.empty
-            MapSize = Location.empty
-            Round = RoundNumber(0u)
-        }
-        
-
 let createTerrain (game:Game) =
-    let addTerrain l =         
+    let addTerrain l (cid:ComponentID) =         
         let eid = game.Entities.MaxEntityID + 1u
-        let cid = game.Entities.MaxComponentID
         let t = 
             match random.Next(1,50) with
             | 1 -> Rock
@@ -51,12 +36,17 @@ let createTerrain (game:Game) =
         baseTerrain
     //start
     mapLocations game.MapSize
-    |> Array.fold (fun (g:Game) l -> { g with Entities = Entities.createEntity (g.Entities) (addTerrain l) } ) game
+    |> Array.fold (fun (g:Game) l -> { g with Entities = Entities.createEntity (g.Entities) (addTerrain l g.Entities.MaxComponentID) } ) game
+
+let incrementRound (game:Game) : Game =
+    {
+        game with 
+            Round = game.Round + 1u 
+    }
 
 let makeGrass (n:uint32) (game:Game) =
-    let make (l:Location) =
+    let make (l:Location) (cid:ComponentID) =
         let eid = game.Entities.MaxEntityID + 1u
-        let cid = game.Entities.MaxComponentID
         [| 
             Food { ID = cid + 1u; EntityID = eid; FoodType = Food_Carrot; Quantity = 20; QuantityMax = 20 }
             Form { ID = cid + 2u; EntityID = eid; Born = RoundNumber(0u); CanSeePast = true; IsPassable = true; Name = Food_Carrot.ToString(); Symbol = Food_Carrot.Symbol.Value; Location = l }
@@ -67,14 +57,13 @@ let makeGrass (n:uint32) (game:Game) =
     | 0u -> game
     | _ -> 
         [|1u..n|] 
-        |> Array.fold (fun (g:Game) i -> { g with Entities = Entities.createEntity (g.Entities) (make (Location.random game.MapSize)) } ) game
+        |> Array.fold (fun (g:Game) i -> { g with Entities = Entities.createEntity (g.Entities) (make (Location.random game.MapSize) g.Entities.MaxComponentID) } ) game
 
-let makeRabbits (firstIsHuman:bool) (n:uint32) (game:Game) = 
-    let make (l:Location) (i:uint32) = 
+let makeRabbits (firstIsHuman:bool) (total:uint32) (game:Game) = 
+    let make (l:Location) (cid:ComponentID) (i:uint32) = 
         let eid = game.Entities.MaxEntityID + 1u
-        let cid = game.Entities.MaxComponentID
         let controller = 
-            match n with
+            match i with
             | 1u -> Controller { ID = cid + 1u; EntityID = eid; ControllerType = (if firstIsHuman then Keyboard else AI_Random); CurrentAction = Idle; CurrentActions = [|Idle|]; PotentialActions = [|Idle|] }
             | _ -> Controller { ID = cid + 1u; EntityID = eid; ControllerType = AI_Random; CurrentAction = Idle; CurrentActions = [|Idle|]; PotentialActions = [|Idle|] }
         let matingStatus = if i = 1u || random.Next(0,2) = 0 then Male else Female
@@ -94,11 +83,11 @@ let makeRabbits (firstIsHuman:bool) (n:uint32) (game:Game) =
             |]
         baseBunny
     //start
-    match n with 
+    match total with 
     | 0u -> game
     | _ -> 
-        [|1u..n|]
-        |> Array.fold (fun (g:Game) i -> { g with Entities = Entities.createEntity (g.Entities) (make (Location.random game.MapSize) i) } ) game
+        [|1u..total|]
+        |> Array.fold (fun (g:Game) i -> { g with Entities = Entities.createEntity (g.Entities) (make (Location.random game.MapSize) g.Entities.MaxComponentID i) }) game
 
 let setMapSize (l:Location) (game:Game) =
     {
