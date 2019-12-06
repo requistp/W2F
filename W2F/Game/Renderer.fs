@@ -26,6 +26,7 @@ let renderWorld (game:Game) : unit =
         
         System.Console.SetCursorPosition(int l.X, int l.Y)
         
+        //if fd.Symbol <> '.' then 
         System.Console.Write(fd.Symbol)
         )
 

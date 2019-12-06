@@ -8,7 +8,16 @@ open EntityAndGameTypes
 open System
 
 
-let getInputForAllEntities (game:Game) (*log:agent_GameLog*) (*renderer:(EntityManager->EntityID->unit) option*) : Game = 
+let private actionIsAllowed (cc:ControllerComponent) (action:ActionTypes) = cc.CurrentActions |> Array.contains action
+
+
+let getPotentialActions (cts:Component[]) = 
+    let ects = cts |> Array.map getComponentType
+    ActionTypes.AsArray 
+    |> Array.choose (fun a -> if requiredComponents a |> Array.forall (fun ct -> ects |> Array.contains ct) then Some a else None)
+
+
+let getInputForAllEntities (game:Game) (*renderer:(EntityManager->EntityID->unit) option*) : Game = 
     let awaitKeyboardInput (cc:ControllerComponent) =
         let mutable _action = None            
         // Uncomment for Entity-view... 
@@ -32,24 +41,25 @@ let getInputForAllEntities (game:Game) (*log:agent_GameLog*) (*renderer:(EntityM
                 System.Threading.Thread.Sleep 2
             _action <- handleKeyPressed (Console.ReadKey(true))        
         _action.Value
+
     let getCurrentActions (cc:ControllerComponent) = 
-        //let movesAllowed = MovementActionsAllowed enm entityID
-        let newCurrentActions =
-            cc.CurrentActions 
-            |> Array.choose (fun a -> 
-                match a with
-                | Eat -> Some Eat //if EatActionEnabled enm entityID then Some Eat else None
+        let movesAllowed = MovementSystem.movementActionsAllowed game cc.EntityID
+        let newCurrent =
+            cc.PotentialActions 
+            |> Array.choose (function
+                | Eat -> if EatingSystem.eatActionEnabled game.Entities cc.EntityID then Some Eat else None
                 | ExitGame -> if cc.ControllerType = Keyboard then Some ExitGame else None
                 | Idle -> Some Idle
-                | Mate -> Some Mate //if MateActionEnabled enm entityID game.round then Some Mate else None
-                | Move_North -> Some Move_North //if Array.contains Move_North movesAllowed then Some Move_North else None
-                | Move_East ->  Some Move_East //if Array.contains Move_East  movesAllowed then Some Move_East  else None
-                | Move_South -> Some Move_South //if Array.contains Move_South movesAllowed then Some Move_South else None
-                | Move_West ->  Some Move_West //if Array.contains Move_West  movesAllowed then Some Move_West  else None
+                | Mate -> None //if MateActionEnabled enm entityID game.round then Some Mate else None
+                | Move_North -> if Array.contains Move_North movesAllowed then Some Move_North else None
+                | Move_East ->  if Array.contains Move_East  movesAllowed then Some Move_East  else None
+                | Move_South -> if Array.contains Move_South movesAllowed then Some Move_South else None
+                | Move_West ->  if Array.contains Move_West  movesAllowed then Some Move_West  else None
                 )
-        match (arrayContentsMatch newCurrentActions cc.CurrentActions) with
+        match (arrayContentsMatch newCurrent cc.CurrentActions) with
         | true -> cc
-        | false -> { cc with CurrentActions = newCurrentActions }
+        | false -> { cc with CurrentActions = newCurrent }
+
     let getActionForEntity (cc:ControllerComponent) =
         {
             cc with
@@ -60,17 +70,19 @@ let getInputForAllEntities (game:Game) (*log:agent_GameLog*) (*renderer:(EntityM
                     | Keyboard -> 
                         awaitKeyboardInput cc
         }
+
     let handleSplitInputTypes (keyboard:ControllerComponent[], ai:ControllerComponent[]) =
         ai 
-        |> Array.Parallel.map getActionForEntity
+        |> Array.map getActionForEntity
         |> Array.append (keyboard |> Array.map getActionForEntity)
+
     //start
     let newControllers = 
         ControllerComponent
         |> Entities.getComponents_OfType game.Entities
-        |> Array.Parallel.map ToController
-        |> Array.Parallel.map getCurrentActions
-        |> Array.Parallel.partition (fun c -> c.ControllerType = Keyboard)
+        |> Array.map ToController
+        |> Array.map getCurrentActions
+        |> Array.partition (fun c -> c.ControllerType = Keyboard)
         |> handleSplitInputTypes
     {
         game with
@@ -86,54 +98,23 @@ let getInputForAllEntities (game:Game) (*log:agent_GameLog*) (*renderer:(EntityM
             Log =
                 newControllers
                 |> Array.fold (fun log c -> 
-                    LogManager.log_ComponentUpdate log "Ok" "Controller System" "getInputForAllEntities" c.EntityID c.ID (Some (c.CurrentAction,c.CurrentActions))
+                    LogManager.log_ComponentUpdate log "Ok" "Controller System" "getInputForAllEntities" c.EntityID c.ID (Some (c.CurrentAction,c.CurrentActions,c.PotentialActions))
                     ) game.Log
     }
 
 
+let handleInputForAllEntities (game:Game) : Game =
+    ControllerComponent
+    |> Entities.getComponents_OfType game.Entities
+    |> Array.map ToController
+    |> Array.filter (fun c -> not (Array.contains c.CurrentAction [|ExitGame; Idle|]))
+    |> Array.sortBy (fun c -> c.CurrentAction ) 
+    |> Array.fold (fun g c ->
+        match c.CurrentAction with
+        | Eat -> EatingSystem.eat g c.EntityID
+        //| Mate -> 
+        | Move_North | Move_East | Move_South | Move_West -> MovementSystem.moveEntity g c
+        | _ -> g
+        ) game
 
 
-
-
-
-//|> Array.Parallel.map (fun (Controller c) -> setCurrentActions c) 
-//|> Array.fold (fun (m:Map<ComponentID,Component>) (cc:ControllerComponent) ->
-//    let newCC = getInputForEntity cc
-//    match newCC = cc with
-//    | true -> m
-//    | false -> m.Remove(newCC.ID).Add(newCC.ID,Controller newCC)
-//    ) ent.Components
-
-//let updateActionIfChanged (controller:ControllerComponent) newAction = 
-//    if (newAction <> controller.CurrentAction) then
-//        enm.UpdateComponent (Controller { controller with CurrentAction = newAction })
-//        log.Log round (sprintf "%-3s | %-20s -> %-30s #%7i : %A" "Ok" "Controller System" "Current action" controller.EntityID.ToUint32 newAction)
-//|> handleSplitInputTypes 
-//let handleSplitInputTypes (keyboard:ControllerComponent[], ai:ControllerComponent[]) =
-    //ai |> Array.iter getAIInputForEntity
-    //keyboard 
-    //|> Array.map getKeyboardInputForEntity
-    //|> Array.forall (fun b -> b)
-
-//let getKeyboardInputForEntity (cc:ControllerComponent) =
-//    {
-//        cc with
-//            CurrentAction = 
-//                match cc.ControllerType with
-//                | Keyboard -> 
-//                    awaitKeyboardInput enm controller renderer round
-//                | _ -> Idle // Should raise an error?
-//    }
-//    let newAction,cont =
-//        match controller.ControllerType with
-//        | Keyboard -> 
-//            AwaitKeyboardInput enm controller renderer round
-//        | _ -> Idle,false // Should raise an error
-//    match cont with
-//    | false -> false
-//    | true -> 
-//        updateActionIfChanged controller newAction
-//        //if (newAction <> controller.CurrentAction) then
-//        //    enm.UpdateComponent (Controller { controller with CurrentAction = newAction })
-//        //    log.Log round (sprintf "%-3s | %-20s -> %-30s #%7i.%i : %A" "Ok" "Controller System" "Current action" controller.EntityID.ToUint32 controller.ID.ToUint32 newAction)
-//        true

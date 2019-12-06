@@ -62,7 +62,19 @@ type Location =
             Y = int16 (random.Next(0,int size.Y))
             Z = 0s
         }
-    override me.ToString() = sprintf "{X=%i, Y=%i, Z=%i}" me.X me.Y me.Z
+    override me.ToString() = sprintf "{X=%i,Y=%i,Z=%i}" me.X me.Y me.Z
+
+type MovementDirection =
+    | North
+    | East
+    | South
+    | West
+    member me.Location =
+        match me with
+        | North -> { X =  0s; Y = -1s; Z = 0s }
+        | South -> { X =  0s; Y =  1s; Z = 0s }
+        | East  -> { X =  1s; Y =  0s; Z = 0s }
+        | West  -> { X = -1s; Y =  0s; Z = 0s }
 
 
 type RenderTypes =

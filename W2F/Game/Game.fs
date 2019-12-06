@@ -69,26 +69,23 @@ let makeGrass (n:uint32) (game:Game) : Game =
 
 let makeRabbits (firstIsHuman:bool) (total:uint32) (game:Game) : Game = 
     let make (l:Location) (eid:EntityID) (cid:ComponentID) (i:uint32) = 
-        let controller = 
-            match i with
-            | 1u -> Controller { ID = cid + 1u; EntityID = eid; ControllerType = (if firstIsHuman then Keyboard else AI_Random); CurrentAction = Idle; CurrentActions = [|Idle|]; PotentialActions = [|Idle|] }
-            | _ -> Controller { ID = cid + 1u; EntityID = eid; ControllerType = AI_Random; CurrentAction = Idle; CurrentActions = [|Idle|]; PotentialActions = [|Idle|] }
         let matingStatus = if i = 1u || random.Next(0,2) = 0 then Male else Female
         let symbol = if matingStatus = Male then 'R' else 'r' // Handy for debugging: n.ToString().ToCharArray().[0]
         let visionRange = 10s
         let rangeTemplate = rangeTemplate2D visionRange
-        let visionMap = locationsWithinRange2D game.MapSize l rangeTemplate //(rangeTemplate2D visionRange)
+        let visionMap = locationsWithinRange2D game.MapSize l rangeTemplate 
         let visionCalculationType = Shadowcast1
         let baseBunny = 
             [|
-                controller
                 Eating { ID = cid + 2u; EntityID = eid; Calories = 150; CaloriesPerDay = 300; Foods = [|Food_Carrot;Food_Grass|]; Quantity = 75; QuantityMax = 150; QuantityPerAction = 1 }
                 Form { ID = cid + 3u; EntityID = eid; Born = RoundNumber(0u); CanSeePast = true; IsPassable = true; Name = "rabbit"; Symbol = symbol; Location = l }
                 Mating { ID = cid + 4u; EntityID = eid; ChanceOfReproduction = 0.9; LastMatingAttempt = RoundNumber(0u); MatingStatus = matingStatus; Species = Rabbit }
                 Movement { ID = cid + 5u; EntityID = eid; MovesPerTurn = 1 }
                 Vision { ID = cid + 6u; EntityID = eid; LocationsWithinRange = visionMap; Range = visionRange; RangeTemplate = rangeTemplate; ViewedHistory = Map.empty; VisibleLocations = Map.empty; VisionCalculationType = visionCalculationType }
             |]
-        baseBunny
+        Array.append 
+            baseBunny
+            [| Controller { ID = cid + 1u; EntityID = eid; ControllerType = (if firstIsHuman && i = 1u then Keyboard else AI_Random); CurrentAction = Idle; CurrentActions = [|Idle|]; PotentialActions = ControllerSystem.getPotentialActions baseBunny } |]
     //start
     match total with 
     | 0u -> game

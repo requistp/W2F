@@ -5,47 +5,32 @@ open System
 
 
 let rec gameLoop (game:Game) = 
-    // Display Game
     Renderer.renderWorld game
     Renderer.renderRound game
 
-    // Get input for all entities
     game
     |> ControllerSystem.getInputForAllEntities
     |> function
-    | g when g.ExitGame -> ()
+    | g when g.ExitGame -> 
+        g
+        |> LoadAndSave.save LoadAndSave.Binary
     | g ->
         g
-        // Run systems
-
+        |> ControllerSystem.handleInputForAllEntities
 
         |> LogManager.write
         |> Game.incrementRound
         |> gameLoop
 
 Game.empty
-|> Game.setMapSize { X = 80s; Y = 30s; Z = 1s }
+|> Game.setMapSize { X = 50s; Y = 50s; Z = 1s }
 |> Game.createTerrain 
 |> Game.makeGrass 5u
-|> Game.makeRabbits false 5u
+|> Game.makeRabbits true 3u
 |> gameLoop
 
 
+//LoadAndSave.load LoadAndSave.Binary "Save_201912051704_r18"
+//|> gameLoop
 
 
-
-(*
-let g = ControllerSystem.getInputForAllEntities game
-
-// Exit or Continue Game Loop
-match g.ExitGame with
-| true -> ()
-| false -> 
-    g
-    // Run systems
-
-
-    |> LogManager.write
-    |> Game.incrementRound
-    |> gameLoop
-    *)

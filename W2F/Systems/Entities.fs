@@ -1,4 +1,4 @@
-﻿module Entities
+﻿module rec Entities
 open CommonFunctions
 open CommonTypes
 open Component
@@ -37,8 +37,7 @@ let private moveLocations (ent:Entities) (cts:Component[]) =
         let (Form oldF) = ent.Components.Item f.ID
         match (oldF = f) with
         | true -> m
-        | false -> 
-            map_AppendValueToArrayUnique (map_RemoveValueFromArray m oldF.Location oldF.ID) f.Location f.ID
+        | false -> map_AppendValueToArrayUnique (map_RemoveValueFromArray m oldF.Location oldF.ID) f.Location f.ID
         ) ent.Locations
 
 //---------------------------------------------------------------------------------------
@@ -53,16 +52,33 @@ let createEntity (ent:Entities) (cts:Component[]) =
         MaxEntityID = ent.MaxEntityID + 1u
     }
 
+let get (ent:Entities) eid = ent.Entities.Item eid |> getComponents_ByIDs ent
+
+let getAtLocationWithComponent (ent:Entities) (ct:ComponentTypes) (excludeEID:EntityID option) (location:Location) = 
+    location
+    |> getEntityIDsAtLocation ent
+    |> Array.filter (fun eid -> excludeEID.IsNone || eid <> excludeEID.Value) // Not excluded or not me
+    |> Array.choose (tryGetComponent ent ct)
+
+let getComponent (ent:Entities) ct eid = get ent eid |> Array.find (fun (c:Component) -> getComponentType c = ct)
+
 let getComponent_ByID (ent:Entities) cid = ent.Components.Item cid
 
-let getComponents_OfType (ent:Entities) ct =
-    ent.ComponentTypes.Item ct
-    |> Array.map (getComponent_ByID ent)
+let getComponents_ByIDs (ent:Entities) (cids:ComponentID[]) = cids |> Array.map (getComponent_ByID ent)
 
-let getEntity (ent:Entities) (eid:EntityID) = 
-    match (ent.Entities.ContainsKey eid) with
-    | false -> [||]
-    | true -> ent.Entities.Item eid
+let getComponents_OfType (ent:Entities) ct = ent.ComponentTypes.Item ct |> Array.map (getComponent_ByID ent)
+
+let getComponentTypes (ent:Entities) (eid:EntityID) =
+    eid
+    |> get ent
+    |> Array.map getComponentType
+
+let getEntityIDsAtLocation (ent:Entities) location =
+    ent.Locations.Item(location) 
+    |> getComponents_ByIDs ent
+    |> Array.map getComponentEntityID
+
+let getLocation (ent:Entities) (eid:EntityID) = (ToForm (getComponent ent FormComponent eid)).Location
 
 let getLocationMap (ent:Entities) = 
     ent.Locations
@@ -71,7 +87,19 @@ let getLocationMap (ent:Entities) =
         |> Array.map (getComponent_ByID ent)
         |> Array.map ToForm
         )
-    
+
+let impassableLocation (ent:Entities) (excludeEID:EntityID option) (location:Location) =
+    location
+    |> getAtLocationWithComponent ent FormComponent excludeEID
+    |> Array.exists (fun (Form f) -> not f.IsPassable)
+
+let tryGetComponent (ent:Entities) (ct:ComponentTypes) (eid:EntityID) : Option<Component> = 
+    match (get ent eid) |> Array.filter (fun c -> getComponentType c = ct) with
+    | [||] -> None
+    | cts -> Some cts.[0]
+
+let updateComponent (ent:Entities) (c:Component) = updateComponents ent [|c|]
+
 let updateComponents (ent:Entities) (cts:Component[]) = 
     {
         ent with
@@ -79,3 +107,10 @@ let updateComponents (ent:Entities) (cts:Component[]) =
             Locations = moveLocations ent cts
     }
 
+
+
+
+//let getEntity (ent:Entities) (eid:EntityID) = 
+//    match (ent.Entities.ContainsKey eid) with
+//    | false -> [||]
+//    | true -> ent.Entities.Item eid

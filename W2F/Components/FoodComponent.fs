@@ -2,7 +2,6 @@
 open CommonTypes
 
 
-
 type FoodClassifications =
     | Meat
     | Plant

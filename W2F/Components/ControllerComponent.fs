@@ -2,6 +2,7 @@
 open CommonTypes
 open ComponentEnums
 
+
 type ControllerTypes = 
     | AI_Random
     | Keyboard
@@ -19,6 +20,7 @@ type ActionTypes =
     static member AsArray = 
         [|
             Eat
+            ExitGame
             Idle
             Mate
             Move_East
@@ -26,15 +28,6 @@ type ActionTypes =
             Move_South
             Move_West
         |]
-    member me.RequiredComponents =
-        match me with
-        | Eat -> [| EatingComponent |]
-        | Idle -> [||]
-        | Mate -> [| MatingComponent |]
-        | Move_East -> [| FormComponent; MovementComponent |]
-        | Move_North -> [| FormComponent; MovementComponent |]
-        | Move_South -> [| FormComponent; MovementComponent |]
-        | Move_West -> [| FormComponent; MovementComponent |]
 
 
 type ControllerComponent = 
@@ -48,6 +41,14 @@ type ControllerComponent =
     }
 
 
-let actionIsAllowed (cc:ControllerComponent) (action:ActionTypes) = cc.CurrentActions |> Array.contains action
-
+let requiredComponents (at:ActionTypes) =
+    match at with
+    | Eat -> [| EatingComponent |]
+    | ExitGame -> [||]
+    | Idle -> [||]
+    | Mate -> [| MatingComponent |]
+    | Move_East -> [| FormComponent; MovementComponent |]
+    | Move_North -> [| FormComponent; MovementComponent |]
+    | Move_South -> [| FormComponent; MovementComponent |]
+    | Move_West -> [| FormComponent; MovementComponent |]
 

@@ -17,9 +17,13 @@ let isOnMap2D (size:Location) (l:Location) =
     l.X >= 0s && l.X <= size.X-1s && l.Y >=0s && l.Y <= size.Y-1s
 
 
+let isDirectionOnMap2D (size:Location) (l:Location) (dir:MovementDirection) = 
+    isOnMap2D size (l + dir.Location)
+
+
 let distance2D (l1:Location) (l2:Location) =
     Math.Pow (Math.Pow (float (l1.X - l2.X), 2.0) + Math.Pow (float (l1.Y - l2.Y), 2.0), 0.5)
-
+    
 
 let withinRange2D (l1:Location) (range:int16) (l2:Location) =
     int16 (Math.Round(distance2D l1 l2)) <= range

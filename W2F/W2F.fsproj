@@ -25,10 +25,18 @@
     <Compile Include="Systems\EntityAndGameTypes.fs" />
     <Compile Include="Systems\LogManager.fs" />
     <Compile Include="Systems\Entities.fs" />
+    <Compile Include="Systems\FoodSystem.fs" />
+    <Compile Include="Systems\EatingSystem.fs" />
+    <Compile Include="Systems\MovementSystem.fs" />
     <Compile Include="Systems\ControllerSystem.fs" />
-    <Compile Include="Game.fs" />
-    <Compile Include="Renderer.fs" />
+    <Compile Include="Game\LoadAndSave.fs" />
+    <Compile Include="Game\Game.fs" />
+    <Compile Include="Game\Renderer.fs" />
     <Compile Include="Program.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FsPickler" Version="5.2.2" />
   </ItemGroup>
 
 </Project>
