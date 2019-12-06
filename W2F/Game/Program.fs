@@ -23,10 +23,10 @@ let rec gameLoop (game:Game) =
         |> gameLoop
 
 Game.empty
-|> Game.setMapSize { X = 50s; Y = 50s; Z = 1s }
+|> Game.setMapSize { X = 100s; Y = 25s; Z = 1s }
 |> Game.createTerrain 
 |> Game.makeGrass 5u
-|> Game.makeRabbits true 3u
+|> Game.makeRabbits false 3u
 |> gameLoop
 
 

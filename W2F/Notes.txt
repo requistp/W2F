@@ -1,0 +1,18 @@
+﻿
+use Z in location for height
+
+draw terrain first
+
+Utility System
+
+
+Scoring System
+
+
+
+Vision should be expanded: Base range, inside vs outside range, and have a current setting that would account for lighting
+
+Hearing
+Memories
+Lifecycle Stages (Baby, child, adult, elder)
+

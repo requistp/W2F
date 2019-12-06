@@ -20,7 +20,8 @@ let eat (game:Game) (eid:EntityID) =
         let calories = eatenQuantity * f.FoodType.Calories
         let newFoodQuantity = Math.Clamp(f.Quantity - eatenQuantity, 0, f.QuantityMax)
         let allEaten = newFoodQuantity = 0
-        let note = sprintf "EateeID: %i. EatenQuantity: +%i=%i. Calories: +%i=%i. FoodQuantity:%i. All eaten:%b" (f.EntityID.ToUint32) eatenQuantity (eat.Quantity+eatenQuantity) calories (eat.Calories+calories) newFoodQuantity allEaten
+        let killFood = allEaten && f.FoodType.KillOnAllEaten
+        let note = sprintf "EateeID: %i. EatenQuantity: +%i=%i. Calories: +%i=%i. FoodQuantity:%i. All eaten:%b, kill:%b" (f.EntityID.ToUint32) eatenQuantity (eat.Quantity+eatenQuantity) calories (eat.Calories+calories) newFoodQuantity allEaten killFood
         {
             game with 
                 Entities = 
@@ -30,12 +31,13 @@ let eat (game:Game) (eid:EntityID) =
                             Eating { eat with Quantity = eat.Quantity + eatenQuantity; Calories = eat.Calories+calories }
                             Food { f with Quantity = newFoodQuantity }
                         |]
+                    |> (fun e -> if killFood then Entities.removeEntity e f.EntityID else e)
                 Log = LogManager.log_ComponentUpdate game.Log "Ok" "Eating System" "eat" eid eat.ID (Some note)
         }
 
 let getEdibleFoods (eat:EatingComponent) (foods:FoodComponent[]) =
     foods
-    |> Array.filter (fun f -> canEat eat f.FoodType && f.Quantity > 0) // Types I can eat & Food remaining
+    |> Array.filter (fun f -> f.Quantity > 0 && canEat eat f.FoodType) // Types I can eat & Food remaining
 
 let getEdibleFoodsAtLocation (ent:Entities) (eat:EatingComponent) =
     eat.EntityID
@@ -48,15 +50,17 @@ let eatActionEnabled (ent:Entities) (eid:EntityID) =
     (eat.QuantityRemaining > 0) && ((getEdibleFoodsAtLocation ent eat).Length > 0)
 
 
-
 (*
-    let eatFood (food:FoodComponent) =
-        let quantity = Math.Clamp(eat.QuantityPerAction, 0, Math.Min(food.Quantity,eat.QuantityRemaining)) // Clamp by how much food is left and how much stomach space is left
-        let calories = quantity * food.FoodType.Calories
-        match quantity with
-        | 0 -> Error "Stomach is full"
-        | _ -> 
-            enm.UpdateComponent (Eating { eat with Quantity = eat.Quantity+quantity; Calories = eat.Calories+calories })
-            evm.RaiseEvent (Eaten (eat,food))
-            Ok (Some (sprintf "EateeID: %i. Quantity: +%i=%i. Calories: +%i=%i" (food.EntityID.ToUint32) quantity (eat.Quantity+quantity) calories (eat.Calories+calories)))
+member private me.onComponentAdded round (ComponentAdded_Eating eat:GameEventData) =
+    evm.AddToSchedule { ScheduleType = RepeatIndefinitely; Frequency = MetabolismFrequency; GameEvent = Metabolize eat }
+    Ok (Some (sprintf "Queued Metabolize to schedule. EntityID:%i" eat.EntityID.ToUint32))
+    
+member private me.onMetabolize round (Metabolize eat:GameEventData) =
+    let newC = eat.Calories - eat.CaloriesPerMetabolize
+    let newQ = eat.Quantity - eat.QuantityPerMetabolize
+    let starving = newC < 0
+    let result = sprintf "Quantity:-%i=%i. Calories:-%i=%i. Starving:%b" eat.QuantityPerMetabolize newQ eat.CaloriesPerMetabolize newC starving
+    if starving then evm.RaiseEvent (Starving eat) 
+    enm.UpdateComponent (Eating { eat with Quantity = newQ; Calories = newC })
+    Ok (Some result)
 *)

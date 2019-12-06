@@ -60,10 +60,11 @@ let map_AppendValueToArrayUnique (map:Map<'K,'V[]>) (key:'K) (newValue:'V) =
             map.Remove(key).Add(key,a)
 
 let map_RemoveValueFromArray (map:Map<'K,'V[]>) (key:'K) (removeValue:'V) =
-    match map.ContainsKey(key) with
+    match (map.ContainsKey key) with
     | false -> map
-    | true -> let a = map.Item(key) |> Array.filter (fun v -> v <> removeValue)
-              map.Remove(key).Add(key,a)
+    | true -> 
+        let a = map.Item(key) |> Array.filter (fun v -> v <> removeValue)
+        map.Remove(key).Add(key,a)
 
 //let OptionBindNone (noneFx:'T option->'T option) (last:'T option) =
 //    match last with

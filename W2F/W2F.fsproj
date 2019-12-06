@@ -27,13 +27,20 @@
     <Compile Include="Systems\Entities.fs" />
     <Compile Include="Systems\FoodSystem.fs" />
     <Compile Include="Systems\EatingSystem.fs" />
+    <Compile Include="Systems\MatingSystem.fs" />
     <Compile Include="Systems\MovementSystem.fs" />
+    <Compile Include="Systems\PlantGrowthSystem.fs" />
+    <Compile Include="Systems\vision_Shadowcast.fs" />
+    <Compile Include="Systems\VisionSystem.fs" />
     <Compile Include="Systems\ControllerSystem.fs" />
     <Compile Include="Game\LoadAndSave.fs" />
     <Compile Include="Game\Game.fs" />
     <Compile Include="Game\Renderer.fs" />
-    <Compile Include="Program.fs" />
+    <Compile Include="Game\Program.fs" />
+    <Content Include="Notes.txt" />
   </ItemGroup>
+
+  <ItemGroup />
 
   <ItemGroup>
     <PackageReference Include="FsPickler" Version="5.2.2" />

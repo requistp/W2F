@@ -40,6 +40,24 @@ let private moveLocations (ent:Entities) (cts:Component[]) =
         | false -> map_AppendValueToArrayUnique (map_RemoveValueFromArray m oldF.Location oldF.ID) f.Location f.ID
         ) ent.Locations
 
+let private removeComponents (start:Map<ComponentID,Component>) (cids:ComponentID[]) =
+    cids
+    |> Array.fold (fun (m:Map<ComponentID,Component>) cid -> m.Remove cid) start
+
+let private removeComponentTypes (start:Map<ComponentTypes,ComponentID[]>) (cts:Component[]) =
+    cts
+    |> Array.fold (fun (m:Map<ComponentTypes,ComponentID[]>) c -> 
+        map_RemoveValueFromArray m (getComponentType c) (getComponentID c)
+        ) start
+
+let private removeLocation (start:Map<Location,ComponentID[]>) (cts:Component[]) = 
+    cts 
+    |> Array.filter (fun (c:Component) -> getComponentType c = FormComponent)
+    |> Array.map ToForm
+    |> Array.fold (fun (m:Map<Location,ComponentID[]>) (f:FormComponent) ->
+        map_RemoveValueFromArray m f.Location f.ID
+        ) start
+
 //---------------------------------------------------------------------------------------
 
 let createEntity (ent:Entities) (cts:Component[]) = 
@@ -92,6 +110,15 @@ let impassableLocation (ent:Entities) (excludeEID:EntityID option) (location:Loc
     location
     |> getAtLocationWithComponent ent FormComponent excludeEID
     |> Array.exists (fun (Form f) -> not f.IsPassable)
+
+let removeEntity (ent:Entities) (eid:EntityID) : Entities = 
+    {
+        ent with
+            Components = removeComponents ent.Components (ent.Entities.Item eid)
+            ComponentTypes = removeComponentTypes ent.ComponentTypes (Entities.get ent eid)
+            Entities = ent.Entities.Remove eid
+            Locations = removeLocation ent.Locations (Entities.get ent eid)
+    }
 
 let tryGetComponent (ent:Entities) (ct:ComponentTypes) (eid:EntityID) : Option<Component> = 
     match (get ent eid) |> Array.filter (fun c -> getComponentType c = ct) with
