@@ -1,7 +1,6 @@
 ﻿module MovementSystem
 open CommonTypes
 open Component
-open ComponentEnums
 open ControllerComponent
 open Entities
 open EntityAndGameTypes

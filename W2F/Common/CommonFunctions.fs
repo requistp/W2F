@@ -42,15 +42,15 @@ let arrayContentsMatch (a:'a[]) (b:'a[]) =
 //    | false -> map
 //    | true -> map.Remove(key).Add(key,newValue)
 
-//let Map_AppendValueToArrayNonUnique (map:Map<'K,'V[]>) (key:'K) (newValue:'V) =
-//    match map.ContainsKey(key) with
-//    | false -> map.Add(key,[|newValue|])
-//    | true -> 
-//        let a = map.Item(key) |> Array.append [|newValue|]
-//        map.Remove(key).Add(key,a)
+let map_AppendValueToArrayNonUnique (map:Map<'K,'V[]>) (key:'K) (newValue:'V) =
+    match (map.ContainsKey key) with
+    | false -> map.Add(key,[|newValue|])
+    | true -> 
+        let a = map.Item(key) |> Array.append [|newValue|]
+        map.Remove(key).Add(key,a)
 
 let map_AppendValueToArrayUnique (map:Map<'K,'V[]>) (key:'K) (newValue:'V) =
-    match map.ContainsKey(key) with
+    match (map.ContainsKey key) with
     | false -> map.Add(key,[|newValue|])
     | true -> 
         match map.Item(key) |> Array.contains newValue with

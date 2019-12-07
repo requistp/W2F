@@ -1,4 +1,4 @@
-﻿module CommonTypes
+﻿module rec CommonTypes
 open CommonFunctions
 open System
 
@@ -11,6 +11,19 @@ type ComponentID =
     member me.ToUint32 = 
         let (ComponentID v) = me
         v
+
+
+type ComponentTypes = 
+    | ControllerComponent
+    | EatingComponent
+    | FoodComponent
+    | FormComponent
+    | MatingComponent
+    | MemoryComponent
+    | MovementComponent
+    | PlantGrowthComponent
+    | TerrainComponent
+    | VisionComponent
 
 
 type DistanceType = int16
@@ -105,5 +118,26 @@ type RoundNumber =
     static member (%) (m1:uint32, RoundNumber m2) = RoundNumber (m1 % m2)
 
 
+type ScheduleTypes =
+    | RepeatFinite of uint32
+    | RepeatIndefinitely
+    | RunOnce
 
 
+type ScheduledEvent = 
+    {
+        ScheduleType : ScheduleTypes
+        Frequency : RoundNumber
+        ScheduledEventType : ScheduledEventTypes
+    }
+    member me.EntityID = 
+        match me.ScheduledEventType with
+        | Metabolize eid -> eid
+
+
+type ScheduledEventTypes =
+    //| Birth of mom:MatingComponent * dad:MatingComponent
+    | Metabolize of eid:EntityID
+    //| PlantRegrowth of PlantGrowthComponent
+    //| PlantReproduce of PlantGrowthComponent
+    //| Starving of EatingComponent

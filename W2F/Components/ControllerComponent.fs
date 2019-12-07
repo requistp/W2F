@@ -1,6 +1,5 @@
 ﻿module ControllerComponent
 open CommonTypes
-open ComponentEnums
 
 
 type ControllerTypes = 

@@ -1,7 +1,6 @@
 ﻿module FoodSystem
 open CommonTypes
 open Component
-open ComponentEnums
 open EntityAndGameTypes
 
 

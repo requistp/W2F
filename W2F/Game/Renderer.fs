@@ -1,6 +1,5 @@
 ﻿module Renderer
 open CommonTypes
-open ComponentEnums
 open Entities
 open EntityAndGameTypes
 open FormComponent

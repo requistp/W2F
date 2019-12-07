@@ -1,7 +1,5 @@
 ﻿module Component
-//open CommonTypes
-//open CommonGenericFunctions
-open ComponentEnums
+open CommonTypes
 open ControllerComponent
 open EatingComponent
 open FoodComponent

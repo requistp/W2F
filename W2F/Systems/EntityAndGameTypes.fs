@@ -1,8 +1,7 @@
-﻿module EntityAndGameTypes
+﻿module rec EntityAndGameTypes
 open CommonTypes
 open Component
-open ComponentEnums
-
+open EatingComponent
 
 type Entities = 
     {
@@ -31,6 +30,7 @@ type Game =
         Log : string[]
         MapSize : Location
         Round : RoundNumber
+        ScheduledEvents : Map<RoundNumber,ScheduledEvent[]>
     }
     static member empty = 
         {
@@ -39,6 +39,7 @@ type Game =
             Log = Array.empty
             MapSize = Location.empty
             Round = RoundNumber(0u)
+            ScheduledEvents = Map.empty
         }
 
 

@@ -11,7 +11,6 @@
     <Compile Include="Common\CalendarTimings.fs" />
     <Compile Include="Common\LocationFunctions.fs" />
     <Compile Include="Common\Logging.fs" />
-    <Compile Include="Components\ComponentEnums.fs" />
     <Compile Include="Components\FoodComponent.fs" />
     <Compile Include="Components\EatingComponent.fs" />
     <Compile Include="Components\FormComponent.fs" />
@@ -30,6 +29,7 @@
     <Compile Include="Systems\MatingSystem.fs" />
     <Compile Include="Systems\MovementSystem.fs" />
     <Compile Include="Systems\PlantGrowthSystem.fs" />
+    <Compile Include="Systems\SchedulingSystem.fs" />
     <Compile Include="Systems\vision_Shadowcast.fs" />
     <Compile Include="Systems\VisionSystem.fs" />
     <Compile Include="Systems\ControllerSystem.fs" />

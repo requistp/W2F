@@ -1,7 +1,6 @@
 ﻿module rec EatingSystem
 open CommonTypes
 open Component
-open ComponentEnums
 open EatingComponent
 open FoodComponent
 open EntityAndGameTypes
@@ -48,6 +47,20 @@ let getEdibleFoodsAtLocation (ent:Entities) (eat:EatingComponent) =
 let eatActionEnabled (ent:Entities) (eid:EntityID) =
     let (Eating eat) = Entities.getComponent ent EatingComponent eid
     (eat.QuantityRemaining > 0) && ((getEdibleFoodsAtLocation ent eat).Length > 0)
+
+let metabolize (game:Game) (eid:EntityID) = 
+    let (Eating eat) = Entities.getComponent  game.Entities EatingComponent eid
+    let newC = eat.Calories - eat.CaloriesPerMetabolize
+    let newQ = eat.Quantity - eat.QuantityPerMetabolize
+    let starving = newC < 0
+    let note = sprintf "Quantity:-%i=%i. Calories:-%i=%i. Starving:%b" eat.QuantityPerMetabolize newQ eat.CaloriesPerMetabolize newC starving
+    //if starving then evm.RaiseEvent (Starving eat) 
+    {
+        game with 
+            Entities = Entities.updateComponent game.Entities (Eating { eat with Quantity = newQ; Calories = newC })
+            Log = LogManager.log_ComponentUpdate game.Log "Ok" "Eating System" "metabolize" eat.EntityID eat.ID (Some note)
+    }
+    
 
 
 (*

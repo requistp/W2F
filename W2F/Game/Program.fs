@@ -1,7 +1,6 @@
 ﻿open CommonFunctions
 open CommonTypes
 open EntityAndGameTypes
-open System
 
 
 let rec gameLoop (game:Game) = 
@@ -13,10 +12,11 @@ let rec gameLoop (game:Game) =
     |> function
     | g when g.ExitGame -> 
         g
-        |> LoadAndSave.save LoadAndSave.Binary
+        |> LoadAndSave.save LoadAndSave.XML
     | g ->
         g
         |> ControllerSystem.handleInputForAllEntities
+        |> SchedulingSystem.executeScheduledEvents
 
         |> LogManager.write
         |> Game.incrementRound
@@ -30,7 +30,7 @@ Game.empty
 |> gameLoop
 
 
-//LoadAndSave.load LoadAndSave.Binary "Save_201912051704_r18"
+//LoadAndSave.load LoadAndSave.XML "Save_201912051704_r18"
 //|> gameLoop
 
 

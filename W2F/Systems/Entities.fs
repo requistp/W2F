@@ -2,7 +2,6 @@
 open CommonFunctions
 open CommonTypes
 open Component
-open ComponentEnums
 open EntityAndGameTypes
 open FormComponent
         
@@ -69,6 +68,8 @@ let createEntity (ent:Entities) (cts:Component[]) =
         MaxComponentID = ent.MaxComponentID + ComponentID(uint32 cts.Length)
         MaxEntityID = ent.MaxEntityID + 1u
     }
+
+let exists (ent:Entities) eid = ent.Entities.ContainsKey eid
 
 let get (ent:Entities) eid = ent.Entities.Item eid |> getComponents_ByIDs ent
 

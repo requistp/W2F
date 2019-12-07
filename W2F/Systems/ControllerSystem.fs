@@ -2,7 +2,6 @@
 open CommonFunctions
 open CommonTypes
 open Component
-open ComponentEnums
 open ControllerComponent
 open EntityAndGameTypes
 open System

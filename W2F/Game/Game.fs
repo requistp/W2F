@@ -1,4 +1,5 @@
 ﻿module Game
+open CalendarTimings
 open CommonFunctions
 open CommonTypes
 open Component
@@ -40,7 +41,9 @@ let createTerrain (game:Game) : Game =
             g with 
                 Entities = Entities.createEntity (g.Entities) (make l (g.Entities.MaxEntityID + 1u) g.Entities.MaxComponentID) 
                 Log = LogManager.log_CreateEntity g.Log "Ok" "Game" "createTerrain" (g.Entities.MaxEntityID + 1u)
-        } ) game
+        } 
+        |> SchedulingSystem.addScheduledEventsForEntity
+        ) game
 
 let incrementRound (game:Game) : Game =
     {
@@ -65,7 +68,9 @@ let makeGrass (n:uint32) (game:Game) : Game =
                 g with 
                     Entities = Entities.createEntity (g.Entities) (make (Location.random game.MapSize) (g.Entities.MaxEntityID + 1u) g.Entities.MaxComponentID) 
                     Log = LogManager.log_CreateEntity g.Log "Ok" "Game" "makeGrass" (g.Entities.MaxEntityID + 1u)
-            } ) game
+            } 
+            |> SchedulingSystem.addScheduledEventsForEntity
+            ) game
 
 let makeRabbits (firstIsHuman:bool) (total:uint32) (game:Game) : Game = 
     let make (l:Location) (eid:EntityID) (cid:ComponentID) (i:uint32) = 
@@ -77,7 +82,7 @@ let makeRabbits (firstIsHuman:bool) (total:uint32) (game:Game) : Game =
         let visionCalculationType = Shadowcast1
         let baseBunny = 
             [|
-                Eating { ID = cid + 2u; EntityID = eid; Calories = 150; CaloriesPerDay = 300; Foods = [|Food_Carrot;Food_Grass|]; Quantity = 75; QuantityMax = 150; QuantityPerAction = 1 }
+                Eating { ID = cid + 2u; EntityID = eid; Calories = 150; CaloriesPerDay = 300; Foods = [|Food_Carrot;Food_Grass|]; Quantity = 75; QuantityMax = 150; QuantityPerAction = 1; MetabolizeEvent = Some { ScheduleType = RepeatIndefinitely; Frequency = MetabolismFrequency; ScheduledEventType = Metabolize eid } }
                 Form { ID = cid + 3u; EntityID = eid; Born = RoundNumber(0u); CanSeePast = true; IsPassable = true; Name = "rabbit"; Symbol = symbol; Location = l }
                 Mating { ID = cid + 4u; EntityID = eid; ChanceOfReproduction = 0.9; LastMatingAttempt = RoundNumber(0u); MatingStatus = matingStatus; Species = Rabbit }
                 Movement { ID = cid + 5u; EntityID = eid; MovesPerTurn = 1 }
@@ -96,7 +101,9 @@ let makeRabbits (firstIsHuman:bool) (total:uint32) (game:Game) : Game =
                 g with 
                     Entities = Entities.createEntity (g.Entities) (make (Location.random game.MapSize) (g.Entities.MaxEntityID + 1u) g.Entities.MaxComponentID i) 
                     Log = LogManager.log_CreateEntity g.Log "Ok" "Game" "makeRabbits" (g.Entities.MaxEntityID + 1u)
-            } ) game
+            } 
+            |> SchedulingSystem.addScheduledEventsForEntity
+            ) game
 
 let setMapSize (l:Location) (game:Game) : Game =
     {
