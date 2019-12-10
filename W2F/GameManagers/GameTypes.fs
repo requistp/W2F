@@ -30,6 +30,7 @@ type EventData =
     | Action_Movement of ControllerComponent
     | CreateEntity of Component[]
     | Metabolize of EntityID
+    | RemoveEntity of EntityID
     member me.EntityID =
         match me with
         | Action_Eat eid -> eid
@@ -37,6 +38,7 @@ type EventData =
         | Action_Movement cc -> cc.EntityID
         | CreateEntity cts -> getComponentEntityID cts.[0]
         | Metabolize eid -> eid
+        | RemoveEntity eid -> eid
     member me.Type = 
         match me with 
         | Action_Eat _ -> Event_Action_Eat
@@ -44,6 +46,7 @@ type EventData =
         | Action_Movement _ -> Event_Action_Movement
         | CreateEntity _ -> Event_CreateEntity
         | Metabolize _ -> Event_Metabolize
+        | RemoveEntity _ -> Event_RemoveEntity
 
 type EventTypes = 
     | Event_Action_Eat
@@ -51,6 +54,7 @@ type EventTypes =
     | Event_Action_Movement
     | Event_CreateEntity
     | Event_Metabolize
+    | Event_RemoveEntity
 
 type EventListener = 
     {

@@ -24,17 +24,18 @@ let rec gameLoop (game:Game) =
 
 Game.empty
 |> Game.setMapSize { X = 100s; Y = 25s; Z = 1s }
-|> Game.setRenderMode RenderTypes.Skip
+|> Game.setRenderMode RenderTypes.World
 |> Game.setSaveEveryRound false
 |> Game.setSaveFormat SaveGameFormats.XML
 |> Events.register
     [|
-        { EventType = Event_Action_Eat; Action = EatingSystem.onEat }
+        { EventType = Event_Action_Eat;      Action = EatingSystem.onEat }
         { EventType = Event_Action_ExitGame; Action = ControllerSystem.onExitGame }
         { EventType = Event_Action_Movement; Action = MovementSystem.onMovement }
-        { EventType = Event_CreateEntity; Action = Entities.onCreateEntity }
-        { EventType = Event_CreateEntity; Action = Scheduler.onCreateEntity }
-        { EventType = Event_Metabolize; Action = EatingSystem.onMetabolize }
+        { EventType = Event_CreateEntity;    Action = Entities.onCreateEntity }
+        { EventType = Event_CreateEntity;    Action = Scheduler.onCreateEntity }
+        { EventType = Event_Metabolize;      Action = EatingSystem.onMetabolize }
+        { EventType = Event_RemoveEntity;    Action = Entities.onRemoveEntity }
     |]
 |> BuildWorld.createTerrain 
 |> BuildWorld.makeGrass 5u

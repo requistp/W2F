@@ -1,4 +1,5 @@
 ﻿module rec EatingSystem
+open CommonFunctions
 open CommonTypes
 open Component
 open EatingComponent
@@ -48,13 +49,19 @@ let onEat (game:Game) (Action_Eat eid:EventData) =
                     Entities.updateComponents 
                         game.Entities
                         [|
-                            Eating { eat with Quantity = eat.Quantity + eatenQuantity; Calories = eat.Calories+calories }
+                            Eating { eat with Quantity = eat.Quantity + eatenQuantity; Calories = eat.Calories + calories }
                             Food { f with Quantity = newFoodQuantity }
                         |]
-                    |> (fun e -> if killFood then Entities.removeEntity e f.EntityID else e)
                 Log = Logger.log2 game.Log "Ok" "Eating System" "eat" eid (Some eat.ID) (Some note)
         }
+        |> ifBind killFood (Events.execute (RemoveEntity f.EntityID))
 
+(*
+let trueBind (condition:bool) (trueFunction:'a->'a)  (value:'a) =
+    match condition with
+    | false -> value
+    | true -> trueFunction value
+*)
 
 let onMetabolize (game:Game) (Metabolize eid:EventData) = 
     let eat = Entities.getComponent game.Entities EatingComponent ToEating eid

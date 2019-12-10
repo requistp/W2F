@@ -124,13 +124,18 @@ let onCreateEntity (game:Game) (CreateEntity cts:EventData) =
             Log = Logger.log2 game.Log "Ok" "Entities" "onCreateEntity" (game.Entities.MaxEntityID + 1u) None (Some (cts.Length.ToString() + " components"))
     }
 
-let removeEntity (ent:Entities) (eid:EntityID) : Entities = 
+let onRemoveEntity (game:Game) (RemoveEntity eid:EventData) = 
     {
-        ent with
-            Components = removeComponents ent.Components (ent.Entities.Item eid)
-            ComponentTypes = removeComponentTypes ent.ComponentTypes (Entities.get ent eid)
-            Entities = ent.Entities.Remove eid
-            Locations = removeLocation ent.Locations (Entities.get ent eid)
+        game with 
+            Entities = 
+                {
+                    game.Entities with
+                        Components = removeComponents game.Entities.Components (game.Entities.Entities.Item eid)
+                        ComponentTypes = removeComponentTypes game.Entities.ComponentTypes (Entities.get game.Entities eid)
+                        Entities = game.Entities.Entities.Remove eid
+                        Locations = removeLocation game.Entities.Locations (Entities.get game.Entities eid)
+                }
+            Log = Logger.log2 game.Log "Ok" "Entities" "onRemoveEntity" eid None None
     }
 
 let tryGetComponent (ent:Entities) (ct:ComponentTypes) (eid:EntityID) : Option<Component> = 

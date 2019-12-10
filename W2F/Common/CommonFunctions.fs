@@ -9,6 +9,11 @@ let arraysMatch (a:'a[]) (b:'a[]) =
     | true -> 
         (a |> Array.fold (fun s t -> s |> Array.filter (fun e -> e <> t )) b) = [||]
 
+let ifBind (condition:bool) (trueFunction:'a->'a)  (value:'a) =
+    match condition with
+    | false -> value
+    | true -> trueFunction value
+
 let map_AppendToArray_NonUnique (map:Map<'K,'V[]>) (key:'K) (newValue:'V) =
     match (map.ContainsKey key) with
     | false -> map.Add(key,[|newValue|])
@@ -32,6 +37,7 @@ let map_RemoveFromArray (map:Map<'K,'V[]>) (key:'K) (removeValue:'V) =
     | true -> 
         let a = map.Item(key) |> Array.filter (fun v -> v <> removeValue)
         map.Remove(key).Add(key,a)
+
 
 //let castEnumToArray<'a> = (Enum.GetValues(typeof<'a>) :?> ('a [])) //This only works if the enum has been assigned int values
 //let castEnumToStringArray<'a> = Enum.GetNames(typeof<'a>) 
