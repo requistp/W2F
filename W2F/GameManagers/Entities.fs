@@ -104,7 +104,7 @@ let getLocationMap (ent:Entities) =
         |> Array.map ToForm
         )
 
-let impassableLocation (ent:Entities) (excludeEID:EntityID option) (location:Location) =
+let isLocationImpassible (ent:Entities) (excludeEID:EntityID option) (location:Location) =
     location
     |> getAtLocationWithComponent ent FormComponent ToForm excludeEID
     |> Array.exists (fun f -> not f.IsPassable)

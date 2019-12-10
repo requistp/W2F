@@ -6,15 +6,6 @@ open System
 open System.IO
 
 
-type SaveGameFormats =
-    | Binary
-    | XML
-    member me.Ext =
-        match me with   
-        | Binary -> ".bin"
-        | XML -> ".xml"
-
-
 let private savePath = "./saves"
 let private binarySerializer = FsPickler.CreateBinarySerializer()
 let private xmlSerializer = FsPickler.CreateXmlSerializer(indent = true)
@@ -45,10 +36,13 @@ let load (format:SaveGameFormats) (filename:string) =
     | XML -> xmlSerializer.Deserialize<Game> (inputStream format filename)
 
 
-let save (format:SaveGameFormats) (game:Game) = 
-    let g = { game with Log = Array.empty }
-    match format with
-    | Binary -> binarySerializer.Serialize(outputStream format g.Round, g)
-    | XML -> xmlSerializer.Serialize(outputStream format g.Round, g)
+let save (game:Game) = 
+    Async.Ignore
+    (
+        match game.SaveFormat with
+        | Binary -> binarySerializer.Serialize(outputStream game.SaveFormat game.Round, game)
+        | XML -> xmlSerializer.Serialize(outputStream game.SaveFormat game.Round, game)
+    ) |> ignore
+    game
 
 

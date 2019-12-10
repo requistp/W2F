@@ -26,24 +26,28 @@ type EventAction = Game -> EventData -> Game
 
 type EventData = 
     | Action_Eat of EntityID
+    | Action_ExitGame
     | Action_Movement of ControllerComponent
     | CreateEntity of Component[]
     | Metabolize of EntityID
     member me.EntityID =
         match me with
         | Action_Eat eid -> eid
+        | Action_ExitGame -> EntityID(0u)
         | Action_Movement cc -> cc.EntityID
         | CreateEntity cts -> getComponentEntityID cts.[0]
         | Metabolize eid -> eid
     member me.Type = 
         match me with 
         | Action_Eat _ -> Event_Action_Eat
+        | Action_ExitGame -> Event_Action_ExitGame
         | Action_Movement _ -> Event_Action_Movement
         | CreateEntity _ -> Event_CreateEntity
         | Metabolize _ -> Event_Metabolize
 
 type EventTypes = 
     | Event_Action_Eat
+    | Event_Action_ExitGame
     | Event_Action_Movement
     | Event_CreateEntity
     | Event_Metabolize
@@ -63,6 +67,8 @@ type Game =
         MapSize : Location
         RenderType : RenderTypes
         Round : RoundNumber
+        SaveEveryRound : bool
+        SaveFormat : SaveGameFormats
         ScheduledEvents : Map<RoundNumber,ScheduledEvent[]>
     }
     static member empty = 
@@ -72,8 +78,10 @@ type Game =
             ExitGame = false
             Log = Array.empty
             MapSize = Location.empty
-            RenderType = World
+            RenderType = RenderTypes.World
             Round = RoundNumber(0u)
+            SaveFormat = SaveGameFormats.XML
+            SaveEveryRound = false
             ScheduledEvents = Map.empty
         }
 
@@ -81,6 +89,14 @@ type RenderTypes =
     | Entity
     | Skip
     | World
+
+type SaveGameFormats =
+    | Binary
+    | XML
+    member me.Ext =
+        match me with   
+        | Binary -> ".bin"
+        | XML -> ".xml"
 
 type ScheduleTypes =
     | RepeatFinite of uint32

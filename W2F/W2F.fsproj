@@ -37,6 +37,7 @@
     <Compile Include="Game\LoadAndSave.fs" />
     <Compile Include="Game\Game.fs" />
     <Compile Include="Game\Renderer.fs" />
+    <Compile Include="Game\BuildWorld.fs" />
     <Compile Include="Game\Program.fs" />
     <Content Include="Notes.txt" />
   </ItemGroup>
