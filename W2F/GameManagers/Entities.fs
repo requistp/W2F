@@ -2,7 +2,7 @@
 open CommonFunctions
 open CommonTypes
 open Component
-open EntityAndGameTypes
+open GameTypes
 open FormComponent
         
 
@@ -17,7 +17,7 @@ let private addComponents (start:Map<ComponentID,Component>) (cts:Component[]) =
 let private addComponentTypes (start:Map<ComponentTypes,ComponentID[]>) (cts:Component[]) =
     cts
     |> Array.fold (fun (m:Map<ComponentTypes,ComponentID[]>) (c:Component) ->
-        map_AppendValueToArrayUnique m (getComponentType c) (getComponentID c)
+        map_AppendToArray_Unique m (getComponentType c) (getComponentID c)
         ) start
 
 let private addLocation (start:Map<Location,ComponentID[]>) (cts:Component[]) = 
@@ -25,7 +25,7 @@ let private addLocation (start:Map<Location,ComponentID[]>) (cts:Component[]) =
     |> Array.filter (fun (c:Component) -> getComponentType c = FormComponent)
     |> Array.map ToForm
     |> Array.fold (fun (m:Map<Location,ComponentID[]>) (f:FormComponent) ->
-        map_AppendValueToArrayUnique m f.Location f.ID
+        map_AppendToArray_Unique m f.Location f.ID
         ) start
 
 let private moveLocations (ent:Entities) (cts:Component[]) = 
@@ -36,7 +36,7 @@ let private moveLocations (ent:Entities) (cts:Component[]) =
         let (Form oldF) = ent.Components.Item f.ID
         match (oldF = f) with
         | true -> m
-        | false -> map_AppendValueToArrayUnique (map_RemoveValueFromArray m oldF.Location oldF.ID) f.Location f.ID
+        | false -> map_AppendToArray_Unique (map_RemoveFromArray m oldF.Location oldF.ID) f.Location f.ID
         ) ent.Locations
 
 let private removeComponents (start:Map<ComponentID,Component>) (cids:ComponentID[]) =
@@ -46,7 +46,7 @@ let private removeComponents (start:Map<ComponentID,Component>) (cids:ComponentI
 let private removeComponentTypes (start:Map<ComponentTypes,ComponentID[]>) (cts:Component[]) =
     cts
     |> Array.fold (fun (m:Map<ComponentTypes,ComponentID[]>) c -> 
-        map_RemoveValueFromArray m (getComponentType c) (getComponentID c)
+        map_RemoveFromArray m (getComponentType c) (getComponentID c)
         ) start
 
 let private removeLocation (start:Map<Location,ComponentID[]>) (cts:Component[]) = 
@@ -54,38 +54,35 @@ let private removeLocation (start:Map<Location,ComponentID[]>) (cts:Component[])
     |> Array.filter (fun (c:Component) -> getComponentType c = FormComponent)
     |> Array.map ToForm
     |> Array.fold (fun (m:Map<Location,ComponentID[]>) (f:FormComponent) ->
-        map_RemoveValueFromArray m f.Location f.ID
+        map_RemoveFromArray m f.Location f.ID
         ) start
 
 //---------------------------------------------------------------------------------------
-
-let createEntity (ent:Entities) (cts:Component[]) = 
-    {
-        Components = addComponents ent.Components cts
-        ComponentTypes = addComponentTypes ent.ComponentTypes cts
-        Entities = ent.Entities.Add(ent.MaxEntityID + 1u,cts |> Array.map getComponentID)
-        Locations = addLocation ent.Locations cts
-        MaxComponentID = ent.MaxComponentID + ComponentID(uint32 cts.Length)
-        MaxEntityID = ent.MaxEntityID + 1u
-    }
 
 let exists (ent:Entities) eid = ent.Entities.ContainsKey eid
 
 let get (ent:Entities) eid = ent.Entities.Item eid |> getComponents_ByIDs ent
 
-let getAtLocationWithComponent (ent:Entities) (ct:ComponentTypes) (excludeEID:EntityID option) (location:Location) = 
+let getAtLocationWithComponent (ent:Entities) (ct:ComponentTypes) (typeConverter:Component->'a) (excludeEID:EntityID option) (location:Location) = 
     location
     |> getEntityIDsAtLocation ent
     |> Array.filter (fun eid -> excludeEID.IsNone || eid <> excludeEID.Value) // Not excluded or not me
     |> Array.choose (tryGetComponent ent ct)
+    |> Array.map typeConverter
 
-let getComponent (ent:Entities) ct eid = get ent eid |> Array.find (fun (c:Component) -> getComponentType c = ct)
+let getComponent (ent:Entities) (ct:ComponentTypes) (typeConverter:Component->'a) (eid:EntityID) = 
+    get ent eid 
+    |> Array.find (fun (c:Component) -> getComponentType c = ct)
+    |> typeConverter
 
 let getComponent_ByID (ent:Entities) cid = ent.Components.Item cid
 
 let getComponents_ByIDs (ent:Entities) (cids:ComponentID[]) = cids |> Array.map (getComponent_ByID ent)
 
-let getComponents_OfType (ent:Entities) ct = ent.ComponentTypes.Item ct |> Array.map (getComponent_ByID ent)
+let getComponents_OfType (ent:Entities) (typeConverter:Component->'a) ct = 
+    ent.ComponentTypes.Item ct 
+    |> Array.map (getComponent_ByID ent)
+    |> Array.map typeConverter
 
 let getComponentTypes (ent:Entities) (eid:EntityID) =
     eid
@@ -97,7 +94,7 @@ let getEntityIDsAtLocation (ent:Entities) location =
     |> getComponents_ByIDs ent
     |> Array.map getComponentEntityID
 
-let getLocation (ent:Entities) (eid:EntityID) = (ToForm (getComponent ent FormComponent eid)).Location
+let getLocation (ent:Entities) (eid:EntityID) = (getComponent ent FormComponent ToForm eid).Location
 
 let getLocationMap (ent:Entities) = 
     ent.Locations
@@ -109,8 +106,23 @@ let getLocationMap (ent:Entities) =
 
 let impassableLocation (ent:Entities) (excludeEID:EntityID option) (location:Location) =
     location
-    |> getAtLocationWithComponent ent FormComponent excludeEID
-    |> Array.exists (fun (Form f) -> not f.IsPassable)
+    |> getAtLocationWithComponent ent FormComponent ToForm excludeEID
+    |> Array.exists (fun f -> not f.IsPassable)
+
+let onCreateEntity (game:Game) (CreateEntity cts:EventData) = 
+    {
+        game with
+            Entities = 
+                {
+                    Components = addComponents game.Entities.Components cts
+                    ComponentTypes = addComponentTypes game.Entities.ComponentTypes cts
+                    Entities = game.Entities.Entities.Add(game.Entities.MaxEntityID + 1u,cts |> Array.map getComponentID)
+                    Locations = addLocation game.Entities.Locations cts
+                    MaxComponentID = game.Entities.MaxComponentID + ComponentID(uint32 cts.Length)
+                    MaxEntityID = game.Entities.MaxEntityID + 1u
+                }
+            Log = Logger.log2 game.Log "Ok" "Entities" "onCreateEntity" (game.Entities.MaxEntityID + 1u) None (Some (cts.Length.ToString() + " components"))
+    }
 
 let removeEntity (ent:Entities) (eid:EntityID) : Entities = 
     {

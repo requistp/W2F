@@ -38,3 +38,4 @@ type FoodComponent =
         Quantity : int
         QuantityMax : int 
     }
+

@@ -1,4 +1,4 @@
-﻿module Component
+﻿module rec Component
 open CommonTypes
 open ControllerComponent
 open EatingComponent
@@ -21,6 +21,18 @@ type Component =
     | Terrain of TerrainComponent
     | Vision of VisionComponent
 
+    
+type ComponentTypes = 
+    | ControllerComponent
+    | EatingComponent
+    | FoodComponent
+    | FormComponent
+    | MatingComponent
+    | MovementComponent
+    | PlantGrowthComponent
+    | TerrainComponent
+    | VisionComponent
+
 let ToController (Controller c) = c
 let ToEating (Eating c) = c
 let ToFood (Food c) = c
@@ -42,6 +54,18 @@ let ToVision (Vision c) = c
 //    | PlantGrowth d -> PlantGrowth { d with ID = idGen(); EntityID = newEID }
 //    | Terrain d -> Terrain { d with ID = idGen(); EntityID = newEID }
 //    | Vision d -> Vision { d with ID = idGen(); EntityID = newEID }
+
+let getComponentEntityID (c:Component) =
+    match c with
+    | Controller d -> d.EntityID
+    | Eating d -> d.EntityID
+    | Food d -> d.EntityID
+    | Form d -> d.EntityID
+    | Mating d -> d.EntityID
+    | Movement d -> d.EntityID
+    | PlantGrowth d -> d.EntityID
+    | Terrain d -> d.EntityID
+    | Vision d -> d.EntityID
 
 let getComponentID (c:Component) =
     match c with 
@@ -67,17 +91,4 @@ let getComponentType (c:Component) =
     | Terrain _ -> TerrainComponent
     | Vision _ -> VisionComponent
 
-let getComponentEntityID (c:Component) =
-    match c with
-    | Controller d -> d.EntityID
-    | Eating d -> d.EntityID
-    | Food d -> d.EntityID
-    | Form d -> d.EntityID
-    | Mating d -> d.EntityID
-    | Movement d -> d.EntityID
-    | PlantGrowth d -> d.EntityID
-    | Terrain d -> d.EntityID
-    | Vision d -> d.EntityID
-
-
-
+         

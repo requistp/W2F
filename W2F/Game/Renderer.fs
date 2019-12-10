@@ -1,36 +1,40 @@
 ﻿module Renderer
 open CommonTypes
 open Entities
-open EntityAndGameTypes
+open GameTypes
 open FormComponent
 open LocationFunctions
 open System
 
-
-let renderWorld (game:Game) : unit = 
-    Console.CursorVisible <- false
-    Console.Title <- "World Map"
-    Console.SetBufferSize(250,500)
-    System.Console.SetWindowPosition(0,0)
+let renderWorld (game:Game) : Game = 
+    match game.RenderType with
+    | Skip | Entity -> game
+    | World ->
+        Console.CursorVisible <- false
+        Console.Title <- "World Map"
+        Console.SetBufferSize(250,500)
+        System.Console.SetWindowPosition(0,0)
     
-    let allForms = getLocationMap game.Entities
-    let selectForm (fds:FormComponent[]) = 
-        fds
-        |> Array.sortByDescending (fun f -> f.ID)
-        |> Array.head
-    game.MapSize
-    |> mapLocations 
-    |> Array.iter (fun (l:Location) -> 
-        let fd = selectForm (allForms.Item l)        
-        System.Console.SetCursorPosition(int l.X, int l.Y)        
-        //if fd.Symbol <> '.' then 
-        System.Console.Write(fd.Symbol)
-        )
+        let allForms = getLocationMap game.Entities
+        let selectForm (fds:FormComponent[]) = 
+            fds
+            |> Array.sortByDescending (fun f -> f.ID)
+            |> Array.head
+        game.MapSize
+        |> mapLocations 
+        |> Array.iter (fun (l:Location) -> 
+            let fd = selectForm (allForms.Item l)        
+            System.Console.SetCursorPosition(int l.X, int l.Y)        
+            //if fd.Symbol <> '.' then 
+            System.Console.Write(fd.Symbol)
+            )
+        game
 
 
-let renderRound (game:Game) : unit = 
+let renderRound (game:Game) : Game = 
     System.Console.SetCursorPosition(0, int game.MapSize.Y + 1)
     printfn "Round: %i" game.Round.ToUint32
+    game
 
 
 (*

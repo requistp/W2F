@@ -39,15 +39,3 @@ type ControllerComponent =
         PotentialActions : ActionTypes[] // Actions that can be done by entities components
     }
 
-
-let requiredComponents (at:ActionTypes) =
-    match at with
-    | Eat -> [| EatingComponent |]
-    | ExitGame -> [||]
-    | Idle -> [||]
-    | Mate -> [| MatingComponent |]
-    | Move_East -> [| FormComponent; MovementComponent |]
-    | Move_North -> [| FormComponent; MovementComponent |]
-    | Move_South -> [| FormComponent; MovementComponent |]
-    | Move_West -> [| FormComponent; MovementComponent |]
-

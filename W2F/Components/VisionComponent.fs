@@ -19,3 +19,4 @@ type VisionComponent =
         ViewedHistory : Map<Location,FormComponent[]>    // All locations that entity has ever seen, and when
         VisibleLocations : Map<Location,FormComponent[]> // Locations that are visible taking into account occlusion, etc. (i.e. a subset of VisionMap)
     }
+

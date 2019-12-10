@@ -1,6 +1,6 @@
 ﻿module LoadAndSave
 open CommonTypes
-open EntityAndGameTypes
+open GameTypes
 open MBrace.FsPickler
 open System
 open System.IO

@@ -50,7 +50,7 @@ let TimingOffset (max:RoundNumber) = RoundNumber(uint32 (random.Next(1,int max.T
 
 
 let AllTimingAccelerator = RoundNumber(1u)
-let MetabolismFrequency = RoundNumber(3u) // roundsPerHour * 2u / AllTimingAccelerator
+let MetabolismFrequency = RoundNumber(10u) // roundsPerHour * 2u / AllTimingAccelerator
 let PlantGrowthFrequency = RoundNumber(10u) // roundsPerDay / AllTimingAccelerator // If I change this, I need to change the regrowRate because 100% of that is applied per this update
 let PlantReproductionFrequency = RoundNumber(10u) // roundsPerMonth / AllTimingAccelerator // If I change this, I need to change the reproductionRate because 100% of that is applied per this update
 

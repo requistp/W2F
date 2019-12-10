@@ -32,7 +32,3 @@ type MatingComponent =
     }
 
 
-let canMate (m:MatingComponent) (round:RoundNumber) =
-    (m.MatingStatus <> MatingStatus.Female_Pregnant) && (m.LastMatingAttempt = RoundNumber(0u) || m.LastMatingAttempt + m.Species.MaxMatingFrequency <= round)
-
-

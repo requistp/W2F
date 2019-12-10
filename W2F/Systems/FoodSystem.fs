@@ -1,13 +1,11 @@
 ﻿module FoodSystem
 open CommonTypes
 open Component
-open EntityAndGameTypes
+open GameTypes
 
 
 let getFoodsAtLocation (ent:Entities) (loc:Location) =
-    loc
-    |> Entities.getAtLocationWithComponent ent FoodComponent None
-    |> Array.map ToFood
+    loc |> Entities.getAtLocationWithComponent ent FoodComponent ToFood None
 
 
 (*

@@ -3,14 +3,14 @@ open CommonTypes
 open Component
 open ControllerComponent
 open Entities
-open EntityAndGameTypes
+open GameTypes
 open LocationFunctions
 open MovementComponent
 
 
 let movementActionsAllowed (game:Game) (eid:EntityID) =
     let mutable _allowed = Array.empty<ActionTypes>
-    let (Component.Movement move) = Entities.getComponent game.Entities MovementComponent eid
+    let move = Entities.getComponent game.Entities MovementComponent ToMovement eid
     let loc = Entities.getLocation game.Entities eid
     match move.MovesPerTurn = 0 with 
     | true -> _allowed
@@ -22,8 +22,8 @@ let movementActionsAllowed (game:Game) (eid:EntityID) =
         _allowed
 
 
-let moveEntity (game:Game) (cc:ControllerComponent) =
-    let (Form f) = Entities.getComponent game.Entities FormComponent cc.EntityID
+let onMovement (game:Game) (Action_Movement cc:EventData) =
+    let f = Entities.getComponent game.Entities FormComponent ToForm cc.EntityID
     let dest = 
         f.Location +
         match cc.CurrentAction with 
@@ -32,15 +32,11 @@ let moveEntity (game:Game) (cc:ControllerComponent) =
         | Move_East  -> East.Location
         | Move_West  -> West.Location
     match (isOnMap2D game.MapSize dest) && not (impassableLocation game.Entities (Some cc.EntityID) dest) with
-    | false -> 
-        {
-            game with 
-                Log = LogManager.log_ComponentUpdate game.Log "Err" "Movement System" "movementActionsAllowed" cc.EntityID cc.ID (Some cc.CurrentAction)
-        }
+    | false -> { game with Log = Logger.log2 game.Log "Err" "Movement System" "onMovement" cc.EntityID (Some cc.ID) (Some (dest.ToString())) }
     | true -> 
         {
             game with 
                 Entities = Entities.updateComponent game.Entities (Form { f with Location = dest })
-                Log = LogManager.log_ComponentUpdate game.Log "Ok" "Movement System" "movementActionsAllowed" cc.EntityID cc.ID (Some (cc.CurrentAction,dest.ToString()))
+                Log = Logger.log2 game.Log "Ok" "Movement System" "onMovement" cc.EntityID (Some cc.ID) (Some (dest.ToString()))
         }
 

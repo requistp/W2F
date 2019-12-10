@@ -2,7 +2,6 @@
 open CommonFunctions
 open System
 
-
 type ComponentID = 
     | ComponentID of uint32
     static member (+) (ComponentID m1, ComponentID m2) = ComponentID(m1 + m2)
@@ -12,22 +11,7 @@ type ComponentID =
         let (ComponentID v) = me
         v
 
-
-type ComponentTypes = 
-    | ControllerComponent
-    | EatingComponent
-    | FoodComponent
-    | FormComponent
-    | MatingComponent
-    | MemoryComponent
-    | MovementComponent
-    | PlantGrowthComponent
-    | TerrainComponent
-    | VisionComponent
-
-
 type DistanceType = int16
-
 
 type EntityID = 
     | EntityID of uint32
@@ -37,7 +21,6 @@ type EntityID =
     member me.ToUint32 = 
         let (EntityID v) = me
         v
-
 
 type Location = 
     {
@@ -89,13 +72,6 @@ type MovementDirection =
         | East  -> { X =  1s; Y =  0s; Z = 0s }
         | West  -> { X = -1s; Y =  0s; Z = 0s }
 
-
-type RenderTypes =
-    | Entity
-    | Skip
-    | World
-    
-
 type RoundNumber =  
     | RoundNumber of uint32
     member me.ToUint32 = 
@@ -117,27 +93,3 @@ type RoundNumber =
     static member (%) (RoundNumber m1, m2:uint32) = RoundNumber (m1 % m2)
     static member (%) (m1:uint32, RoundNumber m2) = RoundNumber (m1 % m2)
 
-
-type ScheduleTypes =
-    | RepeatFinite of uint32
-    | RepeatIndefinitely
-    | RunOnce
-
-
-type ScheduledEvent = 
-    {
-        ScheduleType : ScheduleTypes
-        Frequency : RoundNumber
-        ScheduledEventType : ScheduledEventTypes
-    }
-    member me.EntityID = 
-        match me.ScheduledEventType with
-        | Metabolize eid -> eid
-
-
-type ScheduledEventTypes =
-    //| Birth of mom:MatingComponent * dad:MatingComponent
-    | Metabolize of eid:EntityID
-    //| PlantRegrowth of PlantGrowthComponent
-    //| PlantReproduce of PlantGrowthComponent
-    //| Starving of EatingComponent

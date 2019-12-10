@@ -1,20 +1,40 @@
 ﻿module CommonFunctions
 open System
 
-
-
-
-
-let castEnumToArray<'a> = (Enum.GetValues(typeof<'a>) :?> ('a [])) //This only works if the enum has been assigned int values
-let castEnumToStringArray<'a> = Enum.GetNames(typeof<'a>) 
-
 let random = Random(System.DateTime.Now.DayOfYear*1000000 + System.DateTime.Now.Hour*10000000 + System.DateTime.Now.Minute*100000 + System.DateTime.Now.Second*1000 + System.DateTime.Now.Millisecond)
 
-let arrayContentsMatch (a:'a[]) (b:'a[]) = 
+let arraysMatch (a:'a[]) (b:'a[]) = 
     match a.Length = b.Length with
     | false -> false
     | true -> 
         (a |> Array.fold (fun s t -> s |> Array.filter (fun e -> e <> t )) b) = [||]
+
+let map_AppendToArray_NonUnique (map:Map<'K,'V[]>) (key:'K) (newValue:'V) =
+    match (map.ContainsKey key) with
+    | false -> map.Add(key,[|newValue|])
+    | true -> 
+        let a = Array.append (map.Item key) [|newValue|]
+        map.Remove(key).Add(key,a)
+
+let map_AppendToArray_Unique (map:Map<'K,'V[]>) (key:'K) (newValue:'V) =
+    match (map.ContainsKey key) with
+    | false -> map.Add(key,[|newValue|])
+    | true -> 
+        match map.Item(key) |> Array.contains newValue with
+        | true -> map
+        | false ->
+            let a = Array.append (map.Item key) [|newValue|]
+            map.Remove(key).Add(key,a)
+
+let map_RemoveFromArray (map:Map<'K,'V[]>) (key:'K) (removeValue:'V) =
+    match (map.ContainsKey key) with
+    | false -> map
+    | true -> 
+        let a = map.Item(key) |> Array.filter (fun v -> v <> removeValue)
+        map.Remove(key).Add(key,a)
+
+//let castEnumToArray<'a> = (Enum.GetValues(typeof<'a>) :?> ('a [])) //This only works if the enum has been assigned int values
+//let castEnumToStringArray<'a> = Enum.GetNames(typeof<'a>) 
 
 //let MapKeys(map: Map<'K,'V>) =
 //    seq {
@@ -42,29 +62,6 @@ let arrayContentsMatch (a:'a[]) (b:'a[]) =
 //    | false -> map
 //    | true -> map.Remove(key).Add(key,newValue)
 
-let map_AppendValueToArrayNonUnique (map:Map<'K,'V[]>) (key:'K) (newValue:'V) =
-    match (map.ContainsKey key) with
-    | false -> map.Add(key,[|newValue|])
-    | true -> 
-        let a = map.Item(key) |> Array.append [|newValue|]
-        map.Remove(key).Add(key,a)
-
-let map_AppendValueToArrayUnique (map:Map<'K,'V[]>) (key:'K) (newValue:'V) =
-    match (map.ContainsKey key) with
-    | false -> map.Add(key,[|newValue|])
-    | true -> 
-        match map.Item(key) |> Array.contains newValue with
-        | true -> map
-        | false ->
-            let a = map.Item(key) |> Array.append [|newValue|]
-            map.Remove(key).Add(key,a)
-
-let map_RemoveValueFromArray (map:Map<'K,'V[]>) (key:'K) (removeValue:'V) =
-    match (map.ContainsKey key) with
-    | false -> map
-    | true -> 
-        let a = map.Item(key) |> Array.filter (fun v -> v <> removeValue)
-        map.Remove(key).Add(key,a)
 
 //let OptionBindNone (noneFx:'T option->'T option) (last:'T option) =
 //    match last with

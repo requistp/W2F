@@ -3,11 +3,22 @@ open CommonFunctions
 open CommonTypes
 open Component
 open ControllerComponent
-open EntityAndGameTypes
+open GameTypes
 open System
 
 
 let private actionIsAllowed (cc:ControllerComponent) (action:ActionTypes) = cc.CurrentActions |> Array.contains action
+
+let private requiredComponents (at:ActionTypes) =
+    match at with
+    | Eat -> [| EatingComponent |]
+    | ExitGame -> [||]
+    | Idle -> [||]
+    | Mate -> [| MatingComponent |]
+    | Move_East -> [| FormComponent; MovementComponent |]
+    | Move_North -> [| FormComponent; MovementComponent |]
+    | Move_South -> [| FormComponent; MovementComponent |]
+    | Move_West -> [| FormComponent; MovementComponent |]
 
 
 let getPotentialActions (cts:Component[]) = 
@@ -16,7 +27,7 @@ let getPotentialActions (cts:Component[]) =
     |> Array.choose (fun a -> if requiredComponents a |> Array.forall (fun ct -> ects |> Array.contains ct) then Some a else None)
 
 
-let getInputForAllEntities (game:Game) (*renderer:(EntityManager->EntityID->unit) option*) : Game = 
+let getInputs (game:Game) : Game = 
     let awaitKeyboardInput (cc:ControllerComponent) =
         let mutable _action = None            
         // Uncomment for Entity-view... 
@@ -55,7 +66,7 @@ let getInputForAllEntities (game:Game) (*renderer:(EntityManager->EntityID->unit
                 | Move_South -> if Array.contains Move_South movesAllowed then Some Move_South else None
                 | Move_West ->  if Array.contains Move_West  movesAllowed then Some Move_West  else None
                 )
-        match (arrayContentsMatch newCurrent cc.CurrentActions) with
+        match (arraysMatch newCurrent cc.CurrentActions) with
         | true -> cc
         | false -> { cc with CurrentActions = newCurrent }
 
@@ -78,8 +89,7 @@ let getInputForAllEntities (game:Game) (*renderer:(EntityManager->EntityID->unit
     //start
     let newControllers = 
         ControllerComponent
-        |> Entities.getComponents_OfType game.Entities
-        |> Array.map ToController
+        |> Entities.getComponents_OfType game.Entities ToController
         |> Array.map getCurrentActions
         |> Array.partition (fun c -> c.ControllerType = Keyboard)
         |> handleSplitInputTypes
@@ -97,23 +107,21 @@ let getInputForAllEntities (game:Game) (*renderer:(EntityManager->EntityID->unit
             Log =
                 newControllers
                 |> Array.fold (fun log c -> 
-                    LogManager.log_ComponentUpdate log "Ok" "Controller System" "getInputForAllEntities" c.EntityID c.ID (Some (c.CurrentAction,c.CurrentActions,c.PotentialActions))
+                    Logger.log2 log "Ok" "Controller System" "getInputs" c.EntityID (Some c.ID) (Some (c.CurrentAction,c.CurrentActions,c.PotentialActions))
                     ) game.Log
     }
 
 
-let handleInputForAllEntities (game:Game) : Game =
+let processInputs (game:Game) : Game =
+    let convertToEventData (c:ControllerComponent) =
+        match c.CurrentAction with
+        | Eat -> Action_Eat c.EntityID
+        //| Mate -> 
+        | Move_North | Move_East | Move_South | Move_West -> Action_Movement c
     ControllerComponent
-    |> Entities.getComponents_OfType game.Entities
-    |> Array.map ToController
+    |> Entities.getComponents_OfType game.Entities ToController
     |> Array.filter (fun c -> not (Array.contains c.CurrentAction [|ExitGame; Idle|]))
     |> Array.sortBy (fun c -> c.CurrentAction ) 
-    |> Array.fold (fun g c ->
-        match c.CurrentAction with
-        | Eat -> EatingSystem.eat g c.EntityID
-        //| Mate -> 
-        | Move_North | Move_East | Move_South | Move_West -> MovementSystem.moveEntity g c
-        | _ -> g
-        ) game
+    |> Array.fold (fun g c -> Events.execute (convertToEventData c) g) game
 
 
