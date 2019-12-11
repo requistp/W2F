@@ -37,7 +37,7 @@ let createTerrain (game:Game) : Game =
     game.MapSize
     |> mapLocations 
     |> Array.fold (fun (g:Game) l -> 
-        g |> Events.execute (CreateEntity (make l (g.Entities.MaxEntityID + 1u) g.Entities.MaxComponentID))
+        Game.Entities.create g (make l g.Entities.NewEntityID g.Entities.MaxComponentID)
         ) game
 
 
@@ -53,8 +53,8 @@ let makeGrass (n:uint32) (game:Game) : Game =
     | 0u -> game
     | _ -> 
         [|1u..n|] 
-        |> Array.fold (fun (g:Game) i -> 
-            g |> Events.execute (CreateEntity (make (Location.random game.MapSize) (g.Entities.MaxEntityID + 1u) g.Entities.MaxComponentID))
+        |> Array.fold (fun (g:Game) _ -> 
+            Game.Entities.create g (make (Location.random game.MapSize) g.Entities.NewEntityID g.Entities.MaxComponentID)
             ) game
 
 
@@ -83,7 +83,7 @@ let makeRabbits (firstIsHuman:bool) (total:uint32) (game:Game) : Game =
     | _ -> 
         [|1u..total|]
         |> Array.fold (fun (g:Game) i -> 
-            g |> Events.execute (CreateEntity (make (Location.random game.MapSize) (g.Entities.MaxEntityID + 1u) g.Entities.MaxComponentID i))
+            Game.Entities.create g (make (Location.random game.MapSize) g.Entities.NewEntityID g.Entities.MaxComponentID i)
             ) game
 
 

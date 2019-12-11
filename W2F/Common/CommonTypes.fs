@@ -11,7 +11,9 @@ type ComponentID =
         let (ComponentID v) = me
         v
 
+
 type DistanceType = int16
+
 
 type EntityID = 
     | EntityID of uint32
@@ -21,6 +23,7 @@ type EntityID =
     member me.ToUint32 = 
         let (EntityID v) = me
         v
+
 
 type Location = 
     {
@@ -60,6 +63,7 @@ type Location =
         }
     override me.ToString() = sprintf "{X=%i,Y=%i,Z=%i}" me.X me.Y me.Z
 
+
 type MovementDirection =
     | North
     | East
@@ -71,6 +75,7 @@ type MovementDirection =
         | South -> { X =  0s; Y =  1s; Z = 0s }
         | East  -> { X =  1s; Y =  0s; Z = 0s }
         | West  -> { X = -1s; Y =  0s; Z = 0s }
+
 
 type RoundNumber =  
     | RoundNumber of uint32
@@ -93,3 +98,11 @@ type RoundNumber =
     static member (%) (RoundNumber m1, m2:uint32) = RoundNumber (m1 % m2)
     static member (%) (m1:uint32, RoundNumber m2) = RoundNumber (m1 % m2)
 
+
+type SaveGameFormats =
+    | Binary
+    | XML
+    member me.Ext =
+        match me with   
+        | Binary -> ".bin"
+        | XML -> ".xml"

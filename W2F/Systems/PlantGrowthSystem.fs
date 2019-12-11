@@ -1,4 +1,14 @@
 ﻿module PlantGrowthSystem
+open CalendarTimings
+open Component
+open GameTypes
+
+
+let onComponentAdded (game:Game) (ComponentAdded c:EventData) = 
+    match c with
+    | PlantGrowth pg -> Scheduler.addToSchedule game { ScheduleType = RepeatIndefinitely; Frequency = PlantGrowthFrequency; Event = PlantRegrowth pg.EntityID }
+    | _ -> game
+    
 
 (*
 

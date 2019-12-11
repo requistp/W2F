@@ -9,7 +9,7 @@ let arraysMatch (a:'a[]) (b:'a[]) =
     | true -> 
         (a |> Array.fold (fun s t -> s |> Array.filter (fun e -> e <> t )) b) = [||]
 
-let ifBind (condition:bool) (trueFunction:'a->'a)  (value:'a) =
+let ifBind (condition:bool) (trueFunction:'a->'a)  (value:'a) : 'a =
     match condition with
     | false -> value
     | true -> trueFunction value

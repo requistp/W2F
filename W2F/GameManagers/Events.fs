@@ -7,7 +7,7 @@ let private add (el:EventListener) (game:Game) : Game =
     { 
         game with 
             EventListeners = map_AppendToArray_NonUnique game.EventListeners el.EventType el
-            Log = Logger.log game.Log (sprintf "%-3s | %-20s -> %A : %s" "Ok" "Event Listener" el.EventType (el.Action.ToString()))
+            Log = Logging.log game.Log (sprintf "%-3s | %-20s -> %A : %s" "Ok" "Event Listener" el.EventType (el.Action.ToString()))
     }
     
 

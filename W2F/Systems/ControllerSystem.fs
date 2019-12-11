@@ -89,22 +89,14 @@ let getInputs (game:Game) : Game =
     //start
     let newControllers = 
         ControllerComponent
-        |> Entities.getComponents_OfType game.Entities ToController
+        |> Game.Entities.getComponents_OfType game.Entities ToController
         |> Array.map getCurrentActions
         |> Array.partition (fun c -> c.ControllerType = Keyboard)
         |> handleSplitInputTypes
-    {
-        game with
-            Entities = 
-                newControllers
-                |> Array.map Controller
-                |> Entities.updateComponents game.Entities 
-            Log =
-                newControllers
-                |> Array.fold (fun log c -> 
-                    Logger.log2 log "Ok" "Controller System" "getInputs" c.EntityID (Some c.ID) (Some (c.CurrentAction,c.CurrentActions))
-                    ) game.Log
-    }
+    newControllers
+    |> Array.fold (fun g c ->
+        Game.Entities.updateComponent g (Controller c) (Some (Logging.format1 "Ok" "Controller System" "getInputs" c.EntityID (Some c.ID) (Some (c.CurrentAction,c.CurrentActions))))
+        ) game
 
 
 let processInputs (game:Game) : Game =
@@ -115,7 +107,7 @@ let processInputs (game:Game) : Game =
         //| Mate -> 
         | Move_North | Move_East | Move_South | Move_West -> Action_Movement c
     ControllerComponent
-    |> Entities.getComponents_OfType game.Entities ToController
+    |> Game.Entities.getComponents_OfType game.Entities ToController
     |> Array.filter (fun c -> not (Array.contains c.CurrentAction [|Idle|]))
     |> Array.sortBy (fun c -> c.CurrentAction ) 
     |> Array.fold (fun g c -> Events.execute (convertToEventData c) g) game

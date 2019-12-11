@@ -1,4 +1,5 @@
 ﻿module Logging
+open CommonTypes
 open System
 open System.IO
 
@@ -97,3 +98,24 @@ let writeLog (msg:string) = //(tag:string) (desc:string) =
 
 let terminateLog() = logAgent.PostAndReply(fun rc -> CloseLog rc)
 
+
+
+
+let format1 (result:string) (system:string) (step:string) (eid:EntityID) (cido:ComponentID option) (oo:'a option) = 
+    let cids = 
+        match cido with
+        | None -> ""
+        | Some cid -> cid.ToUint32.ToString()
+    match oo with 
+    | None -> 
+        sprintf "%-3s | %-20s -> %-30s #%7i.%-7s" result system step eid.ToUint32 cids
+    | Some s when s.GetType() = typeof<string> -> 
+        sprintf "%-3s | %-20s -> %-30s #%7i.%-7s : %s" result system step eid.ToUint32 cids (s.ToString())
+    | Some o -> 
+        sprintf "%-3s | %-20s -> %-30s #%7i.%-7s : %A" result system step eid.ToUint32 cids o
+
+
+let log (l:string[]) (s:string) = Array.append l [|s|]
+
+
+let log1 (l:string[]) (result:string) (system:string) (step:string) (eid:EntityID) (cido:ComponentID option) (oo:'a option) = log l (format1 result system step eid cido oo)

@@ -22,9 +22,9 @@
     <Compile Include="Components\VisionComponent.fs" />
     <Compile Include="Components\Component.fs" />
     <Compile Include="GameManagers\GameTypes.fs" />
-    <Compile Include="GameManagers\Logger.fs" />
-    <Compile Include="GameManagers\Entities.fs" />
     <Compile Include="GameManagers\Events.fs" />
+    <Compile Include="GameManagers\Game_Entities.fs" />
+    <Compile Include="GameManagers\Game_Misc.fs" />
     <Compile Include="GameManagers\Scheduler.fs" />
     <Compile Include="Systems\FoodSystem.fs" />
     <Compile Include="Systems\EatingSystem.fs" />
@@ -34,8 +34,6 @@
     <Compile Include="Systems\vision_Shadowcast.fs" />
     <Compile Include="Systems\VisionSystem.fs" />
     <Compile Include="Systems\ControllerSystem.fs" />
-    <Compile Include="Game\LoadAndSave.fs" />
-    <Compile Include="Game\Game.fs" />
     <Compile Include="Game\Renderer.fs" />
     <Compile Include="Game\BuildWorld.fs" />
     <Compile Include="Game\Program.fs" />
