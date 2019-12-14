@@ -6,26 +6,15 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="Common\CommonFunctions.fs" />
-    <Compile Include="Common\CommonTypes.fs" />
-    <Compile Include="Common\CalendarTimings.fs" />
-    <Compile Include="Common\LocationFunctions.fs" />
-    <Compile Include="Common\Logging.fs" />
-    <Compile Include="Components\FoodComponent.fs" />
-    <Compile Include="Components\EatingComponent.fs" />
-    <Compile Include="Components\FormComponent.fs" />
-    <Compile Include="Components\MatingComponent.fs" />
-    <Compile Include="Components\MovementComponent.fs" />
-    <Compile Include="Components\TerrainComponent.fs" />
-    <Compile Include="Components\PlantGrowthComponent.fs" />
-    <Compile Include="Components\ControllerComponent.fs" />
-    <Compile Include="Components\VisionComponent.fs" />
-    <Compile Include="Components\Component.fs" />
-    <Compile Include="GameManagers\GameTypes.fs" />
-    <Compile Include="GameManagers\Events.fs" />
-    <Compile Include="GameManagers\Game_Entities.fs" />
-    <Compile Include="GameManagers\Game_Misc.fs" />
-    <Compile Include="GameManagers\Scheduler.fs" />
+    <Compile Include="Engine\CommonFunctions.fs" />
+    <Compile Include="Engine\EngineTypes.fs" />
+    <Compile Include="Engine\CalendarTimings.fs" />
+    <Compile Include="Engine\LocationFunctions.fs" />
+    <Compile Include="Engine\Logging.fs" />
+    <Compile Include="Engine\Engine.fs" />
+    <Compile Include="Components\ComponentEnums.fs" />
+    <Compile Include="Components\Components.fs" />
+    <Compile Include="Components\GameEvents.fs" />
     <Compile Include="Systems\FoodSystem.fs" />
     <Compile Include="Systems\EatingSystem.fs" />
     <Compile Include="Systems\MatingSystem.fs" />
@@ -34,6 +23,19 @@
     <Compile Include="Systems\vision_Shadowcast.fs" />
     <Compile Include="Systems\VisionSystem.fs" />
     <Compile Include="Systems\ControllerSystem.fs" />
+    <Compile Include="old\Scheduler.fs" />
+    <Compile Include="old\Events.fs" />
+    <Compile Include="old\GameTypes.fs" />
+    <Compile Include="old\FoodComponent.fs" />
+    <Compile Include="old\EatingComponent.fs" />
+    <Compile Include="old\FormComponent.fs" />
+    <Compile Include="old\MatingComponent.fs" />
+    <Compile Include="old\MovementComponent.fs" />
+    <Compile Include="old\TerrainComponent.fs" />
+    <Compile Include="old\PlantGrowthComponent.fs" />
+    <Compile Include="old\ControllerComponent.fs" />
+    <Compile Include="old\VisionComponent.fs" />
+    <Compile Include="old\Component.fs" />
     <Compile Include="Game\Renderer.fs" />
     <Compile Include="Game\BuildWorld.fs" />
     <Compile Include="Game\Program.fs" />

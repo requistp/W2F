@@ -1,75 +1,87 @@
 ﻿module PlantGrowthSystem
 open CalendarTimings
-open Component
-open GameTypes
+open CommonFunctions
+open Components
+open Engine
+open EngineTypes
+open GameEvents
+open LocationFunctions
 
 
-let onComponentAdded (game:Game) (ComponentAdded c:EventData) = 
-    match c with
-    | PlantGrowth pg -> Scheduler.addToSchedule game { ScheduleType = RepeatIndefinitely; Frequency = PlantGrowthFrequency; Event = PlantRegrowth pg.EntityID }
-    | _ -> game
+let onComponentAdded (game:Game) (e:AbstractEventData) = 
+    match (e :?> EngineEvent_ComponentAdded).Component.ComponentType = PlantGrowth.TypeID with
+    | false -> game
+    | true -> 
+        let pg = Entities.getComponent game.Entities PlantGrowth.TypeID e.EntityID |> ToPlantGrowth
+        game
+        |> ifBind (pg.RegrowRate > 0.0)       (Scheduler.addToSchedule { ScheduleType = RepeatIndefinitely; Frequency = PlantGrowthFrequency; Event = PlantRegrowth(e.EntityID) })
+        |> ifBind (pg.ReproductionRate > 0.0) (Scheduler.addToSchedule { ScheduleType = RepeatIndefinitely; Frequency = PlantGrowthFrequency; Event = PlantReproduce(e.EntityID) })
+
+
+
+let onReproduce (game:Game) (e:AbstractEventData) =
+    let pg = Entities.getComponent game.Entities ComponentTypes.PlantGrowth.TypeID e.EntityID :?> PlantGrowthComponent
+    let createPlant (l:Location) = 
+        let adjustComponents (c:AbstractComponent) =
+            c
+            |> ifBind 
+                (c.ComponentType = ComponentTypes.Food.TypeID) 
+                (fun ac -> 
+                    let f = ToFood ac
+                    FoodComponent(f.ID, f.EntityID, f.FoodType, 1, f.QuantityMax).Abstract)
+            |> ifBind 
+                (c.ComponentType = ComponentTypes.Form.TypeID) 
+                (fun ac -> 
+                    let f = ToForm ac
+                    FormComponent(f.ID, f.EntityID, game.Round, f.CanSeePast, f.IsPassable, l, f.Name, f.Symbol).Abstract)
+        e.EntityID
+        |> Entities.copy game 
+        |> Array.map adjustComponents
+        |> Entities.create game
+
+    let checkReproductionRate r = 
+        match pg.ReproductionRate >= r with
+        | false -> Error (sprintf "Failed: reproduction rate (%f<%f)" pg.ReproductionRate r)
+        | true -> Ok None
+
+    let checkOnMap _ =
+        let newLocation = addOffset (Entities.getLocation game.Entities pg.EntityID) pg.ReproductionRange pg.ReproductionRange 0 false true
+        match isOnMap2D game.MapSize newLocation with
+        | false -> Error (sprintf "Failed: location not on map:%s" (newLocation.ToString())) 
+        | true -> Ok newLocation
+
+    let checkPlantAtLocation newLocation = 
+        match (Engine.Entities.getAtLocationWithComponent game.Entities PlantGrowth.TypeID None newLocation).Length with 
+        | x when x > 0 -> Error (sprintf "Failed: plant exists at location:%s" (newLocation.ToString()))
+        | _ -> Ok newLocation
+
+    let terrainIsSuitable newLocation = 
+        match pg.GrowsInTerrain |> Array.contains (ToTerrain (Engine.Entities.getAtLocationWithComponent game.Entities Terrain.TypeID None newLocation).[0]).Terrain with
+        | false -> Error "Failed: terrain is not suitable"
+        | true -> Ok newLocation
+
+    let checkFoodOnParent newLocation = 
+        match (Engine.Entities.tryGetComponent game.Entities ComponentTypes.Food.TypeID pg.EntityID) with
+        | None -> Ok (createPlant newLocation)
+        | Some ac ->
+            let f = ToFood ac
+            let pct = float f.Quantity / float f.QuantityMax
+            match pg.ReproductionRequiredFoodQuantity < pct with
+            | false -> Error (sprintf "Failed: food component quantity below requirement (%f<%f)" pct pg.ReproductionRequiredFoodQuantity)
+            | true -> Ok (createPlant newLocation)
+
+    Ok (random.NextDouble())
+    |> Result.bind checkReproductionRate
+    |> Result.bind checkOnMap
+    |> Result.bind checkPlantAtLocation
+    |> Result.bind terrainIsSuitable
+    |> Result.bind checkFoodOnParent
+    |> Result.mapError (fun e -> if game.Settings.LoggingOn then ({ game with Log = Logging.log1 game.Log "Err" "Plant Growth" "onReproduce" pg.EntityID (Some pg.ID) (Some e) }) else game )
+    |> function
+        | Error ge -> ge
+        | Ok go -> go
     
 
-(*
-
-type PlantGrowthSystem(description:string, isActive:bool, enm:EntityManager, evm:EventManager) =
-    inherit AbstractSystem(description,isActive)
-  
-    member private me.onComponentAdded round (ComponentAdded_PlantGrowth pgc:GameEventData) =
-        if pgc.RegrowRate > 0.0 then evm.AddToSchedule { ScheduleType = RepeatIndefinitely; Frequency = PlantGrowthFrequency; GameEvent = PlantRegrowth pgc }
-        if pgc.ReproductionRate > 0.0 then evm.AddToSchedule { ScheduleType = RepeatIndefinitely; Frequency = PlantReproductionFrequency; GameEvent = PlantReproduce pgc }
-        Ok (Some (sprintf "Queued Regrow to Schedule:%b. Queued Repopulate to Schedule:%b" (pgc.RegrowRate > 0.0) (pgc.ReproductionRate > 0.0)))
-  
-    member private me.onReproduce round (PlantReproduce pgc:GameEventData) =
-        let makePlant (l:LocationDataInt) = 
-            let adjustComponents (c:Component) =
-                match c with
-                | Food d -> 
-                    Food { d with Quantity = 1 }
-                | Form d -> 
-                    Form { d with Location = l }
-                | _ -> c          
-            let newcts = 
-                pgc.EntityID
-                |> EntityExt.CopyEntity enm round
-                |> Array.map adjustComponents
-            evm.RaiseEvent (CreateEntity newcts)
-            Ok (Some (sprintf "New plant:%i. Location:%s" (GetComponentEntityID newcts.[0]).ToUint32 (l.ToString())))
-
-        let tryMakeNewPlant = 
-            let r = random.NextDouble()
-            match pgc.ReproductionRate >= r with
-            | false -> Error (sprintf "Failed: reproduction rate (%f<%f)" pgc.ReproductionRate r)
-            | true -> 
-                let newLocation = AddOffset (EntityExt.GetLocation enm pgc.EntityID) pgc.ReproductionRange pgc.ReproductionRange 0 false true
-                match IsOnMap2D newLocation with
-                | false -> Error (sprintf "Failed: location not on map:%s" (newLocation.ToString()))
-                | true -> 
-                    let eids = enm.GetEntityIDsAtLocation newLocation
-                    match (EntityExt.GetComponentForEntities enm PlantGrowthComponent eids).Length with 
-                    | x when x > 0 -> Error (sprintf "Failed: plant exists at location:%s" (newLocation.ToString()))
-                    | _ -> 
-                        match pgc.GrowsInTerrain|>Array.contains (ToTerrain (EntityExt.GetComponentForEntities enm TerrainComponent eids).[0]).Terrain with
-                        | false -> Error "Failed: terrain is not suitable"
-                        | true -> 
-                            match (EntityExt.TryGetComponent enm FoodComponent pgc.EntityID) with
-                            | None -> Ok newLocation
-                            | Some (Food fd) -> 
-                                let pct = float fd.Quantity / float fd.QuantityMax
-                                match pgc.ReproductionRequiredFoodQuantity < pct with
-                                | false -> Error (sprintf "Failed: food component quantity below requirement (%f<%f)" pct pgc.ReproductionRequiredFoodQuantity)
-                                | true -> Ok newLocation
-        match tryMakeNewPlant with
-        | Error s -> Error s
-        | Ok l -> makePlant l 
-
-    override me.Initialize = 
-        evm.RegisterListener me.Description Event_ComponentAdded_PlantGrowth (me.TrackTask me.onComponentAdded)
-        evm.RegisterListener me.Description Event_PlantReproduce             (me.TrackTask me.onReproduce)
-        base.SetToInitialized
-
-    override me.Update round = 
-        ()
 
 
-*)
+

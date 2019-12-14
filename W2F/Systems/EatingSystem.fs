@@ -1,11 +1,11 @@
 ﻿module rec EatingSystem
 open CalendarTimings
 open CommonFunctions
-open CommonTypes
-open Component
-open EatingComponent
-open FoodComponent
-open GameTypes
+open ComponentEnums
+open Components
+open Engine
+open EngineTypes
+open GameEvents
 open System
 
 
@@ -19,29 +19,32 @@ let private getEdibleFoods (eat:EatingComponent) (foods:FoodComponent[]) =
 
 let private getEdibleFoodsAtLocation (ent:Entities) (eat:EatingComponent) =
     eat.EntityID
-    |> Game.Entities.getLocation ent 
+    |> Engine.Entities.getLocation ent 
     |> FoodSystem.getFoodsAtLocation ent
     |> getEdibleFoods eat
    
 
 let eatActionEnabled (ent:Entities) (eid:EntityID) =
-    let eat = Game.Entities.getComponent ent EatingComponent ToEating eid
-    (eat.QuantityRemaining > 0) && ((getEdibleFoodsAtLocation ent eat).Length > 0)
+    let eat = Engine.Entities.getComponent ent ComponentTypes.Eating.TypeID eid |> ToEating
+    (eat. QuantityRemaining > 0) && ((getEdibleFoodsAtLocation ent eat).Length > 0)
 
 
-let onComponentAdded (game:Game) (ComponentAdded c:EventData) = 
-    match c with
-    | Eating eat -> Scheduler.addToSchedule game { ScheduleType = RepeatIndefinitely; Frequency = MetabolismFrequency; Event = Metabolize eat.EntityID }
-    | _ -> game
+let onComponentAdded (game:Game) (e:AbstractEventData) = 
+    match (e :?> EngineEvent_ComponentAdded).Component.ComponentType = ComponentTypes.Eating.TypeID with
+    | false -> game
+    | true -> 
+        Scheduler.addToSchedule 
+            { ScheduleType = RepeatIndefinitely; Frequency = MetabolismFrequency; Event = Metabolize(e.EntityID) }
+            game
     
     
-let onEat (game:Game) (Action_Eat eid:EventData) =
-    let eat = Game.Entities.getComponent game.Entities EatingComponent ToEating eid
+let onEat (game:Game) (e:AbstractEventData) =
+    let eat = Engine.Entities.getComponent game.Entities Eating.TypeID e.EntityID |> ToEating
     eat
     |> getEdibleFoodsAtLocation game.Entities
     |> Array.sortByDescending (fun f -> f.FoodType.Calories) // Highest caloric food first
     |> function
-    | [||] -> { game with Log = Logging.log1 game.Log "Err" "Eating System" "eat" eid (Some eat.ID) (Some "No food at location") }
+    | [||] -> if game.Settings.LoggingOn then ({ game with Log = Logging.log1 game.Log "Err" "Eating System" "eat" e.EntityID (Some eat.ID) (Some "No food at location") }) else game
     | fs -> 
         let f = fs.[0]
         let eatenQuantity = Math.Clamp(eat.QuantityPerAction, 0, Math.Min(f.Quantity,eat.QuantityRemaining)) // Clamp by how much food is left and how much stomach space is left
@@ -50,39 +53,26 @@ let onEat (game:Game) (Action_Eat eid:EventData) =
         let allEaten = newFoodQuantity = 0
         let killFood = allEaten && f.FoodType.KillOnAllEaten
         let note = sprintf "EateeID: %i. EatenQuantity: +%i=%i. Calories: +%i=%i. FoodQuantity:%i. All eaten:%b, kill:%b" (f.EntityID.ToUint32) eatenQuantity (eat.Quantity+eatenQuantity) calories (eat.Calories+calories) newFoodQuantity allEaten killFood
-        Game.Entities.updateComponents 
+        Engine.Entities.updateComponents 
             game
             [|
-                Eating { eat with Quantity = eat.Quantity + eatenQuantity; Calories = eat.Calories + calories }
-                Food { f with Quantity = newFoodQuantity }
+                EatingComponent(eat.ID, eat.EntityID, eat.Calories + calories, eat.CaloriesPerDay, eat.Foods, eat.Quantity + eatenQuantity, eat.QuantityMax, eat.QuantityPerAction)
+                FoodComponent(f.ID, f.EntityID, f.FoodType, newFoodQuantity, f.QuantityMax)
             |]
-            (Some (Logging.format1 "Ok" "Eating System" "eat" eid (Some eat.ID) (Some note)))
-        //{
-        //    game with 
-        //        Entities = 
-        //            Entities.updateComponents 
-        //                game.Entities
-        //                [|
-        //                    Eating { eat with Quantity = eat.Quantity + eatenQuantity; Calories = eat.Calories + calories }
-        //                    Food { f with Quantity = newFoodQuantity }
-        //                |]
-        //        Log = Logger.log2 game.Log "Ok" "Eating System" "eat" eid (Some eat.ID) (Some note)
-        //}
-        |> ifBind killFood (Game.Entities.remove f.EntityID)
+            (Some (Logging.format1 "Ok" "Eating System" "eat" e.EntityID (Some eat.ID) (Some note)))
+        |> ifBind killFood (Engine.Entities.remove f.EntityID)
+        
 
-
-let onMetabolize (game:Game) (Metabolize eid:EventData) = 
-    let eat = Game.Entities.getComponent game.Entities EatingComponent ToEating eid
+let onMetabolize (game:Game) (e:AbstractEventData) = 
+    let eat = Engine.Entities.getComponent game.Entities Eating.TypeID e.EntityID |> ToEating
     let newC = eat.Calories - eat.CaloriesPerMetabolize
     let newQ = eat.Quantity - eat.QuantityPerMetabolize
     let starving = newC < 0
     let note = sprintf "Quantity:-%i=%i. Calories:-%i=%i. Starving:%b" eat.QuantityPerMetabolize newQ eat.CaloriesPerMetabolize newC starving
-    Game.Entities.updateComponent game (Eating { eat with Quantity = newQ; Calories = newC }) (Some (Logging.format1 "Ok" "Eating System" "metabolize" eat.EntityID (Some eat.ID) (Some note)))
-    //{
-    //    game with 
-    //        Entities = Entities.updateComponent game.Entities (Eating { eat with Quantity = newQ; Calories = newC })
-    //        Log = Logger.log2 game.Log "Ok" "Eating System" "metabolize" eat.EntityID (Some eat.ID) (Some note)
-    //}
+    Engine.Entities.updateComponent 
+        game 
+        (EatingComponent(eat.ID, eat.EntityID, newC, eat.CaloriesPerDay, eat.Foods, newQ, eat.QuantityMax, eat.QuantityPerAction)) 
+        (Some (Logging.format1 "Ok" "Eating System" "onMetabolize" e.EntityID None (Some note)))
     //if starving then evm.RaiseEvent (Starving eat) 
     //|> ifBind killFood (Events.execute (RemoveEntity f.EntityID))
 

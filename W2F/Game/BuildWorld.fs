@@ -1,16 +1,9 @@
 ﻿module BuildWorld
 open CommonFunctions
-open CommonTypes
-open Component
-open ControllerComponent
-open EatingComponent
-open GameTypes
-open FoodComponent
-open FormComponent
+open EngineTypes
+open ComponentEnums
+open Components
 open LocationFunctions
-open MatingComponent
-open TerrainComponent
-open VisionComponent
 
 
 let createTerrain (game:Game) : Game =
@@ -25,8 +18,8 @@ let createTerrain (game:Game) : Game =
             | _ -> true            
         let mutable baseTerrain =
             [| 
-                Form { ID = cid + 1u; EntityID = eid; Born = RoundNumber(0u); CanSeePast = canSeePast; IsPassable = terrain_IsPassable t; Name = t.ToString(); Symbol = terrain_Symbol t; Location = l }
-                Terrain { ID = cid + 2u; EntityID = eid; Terrain = t }
+                FormComponent(cid + 1u, eid, RoundNumber(0u), canSeePast, t.IsPassable, l, "Terrain", t.Symbol).Abstract
+                TerrainComponent(cid + 2u, eid, t).Abstract
             |] 
             // I left this mechanic in place because there will be some component that is appropriate to add to Terrain--like a burrow
             //match food.IsSome with
@@ -37,16 +30,16 @@ let createTerrain (game:Game) : Game =
     game.MapSize
     |> mapLocations 
     |> Array.fold (fun (g:Game) l -> 
-        Game.Entities.create g (make l g.Entities.NewEntityID g.Entities.MaxComponentID)
+        Engine.Entities.create g (make l g.Entities.NewEntityID g.Entities.MaxComponentID)
         ) game
 
 
 let makeGrass (n:uint32) (game:Game) : Game =
     let make (l:Location) (eid:EntityID) (cid:ComponentID) =
         [| 
-            Food { ID = cid + 1u; EntityID = eid; FoodType = Food_Carrot; Quantity = 20; QuantityMax = 20 }
-            Form { ID = cid + 2u; EntityID = eid; Born = RoundNumber(0u); CanSeePast = true; IsPassable = true; Name = Food_Carrot.ToString(); Symbol = Food_Carrot.Symbol.Value; Location = l }
-            PlantGrowth { ID = cid + 3u; EntityID = eid; GrowsInTerrain = [|Dirt|]; RegrowRate = 0.1; ReproductionRate = 0.25; ReproductionRange = 5; ReproductionRequiredFoodQuantity = 0.75 }
+            FoodComponent(cid + 1u, eid, Food_Carrot, 20, 20).Abstract
+            FormComponent(cid + 2u, eid, RoundNumber(0u), true, true, l, Food_Carrot.ToString(), Food_Carrot.Symbol.Value).Abstract
+            PlantGrowthComponent(cid + 3u, eid, [|Dirt|], 0.1, 0.25, 5, 0.75).Abstract
         |] 
     //start
     match n with 
@@ -54,7 +47,7 @@ let makeGrass (n:uint32) (game:Game) : Game =
     | _ -> 
         [|1u..n|] 
         |> Array.fold (fun (g:Game) _ -> 
-            Game.Entities.create g (make (Location.random game.MapSize) g.Entities.NewEntityID g.Entities.MaxComponentID)
+            Engine.Entities.create g (make (Location.random game.MapSize) g.Entities.NewEntityID g.Entities.MaxComponentID)
             ) game
 
 
@@ -68,22 +61,22 @@ let makeRabbits (firstIsHuman:bool) (total:uint32) (game:Game) : Game =
         let visionCalculationType = Shadowcast1
         let baseBunny = 
             [|
-                Eating { ID = cid + 2u; EntityID = eid; Calories = 150; CaloriesPerDay = 300; Foods = [|Food_Carrot;Food_Grass|]; Quantity = 75; QuantityMax = 150; QuantityPerAction = 1 }
-                Form { ID = cid + 3u; EntityID = eid; Born = RoundNumber(0u); CanSeePast = true; IsPassable = true; Name = "rabbit"; Symbol = symbol; Location = l }
-                Mating { ID = cid + 4u; EntityID = eid; ChanceOfReproduction = 0.9; LastMatingAttempt = RoundNumber(0u); MatingStatus = matingStatus; Species = Rabbit }
-                Movement { ID = cid + 5u; EntityID = eid; MovesPerTurn = 1 }
-                Vision { ID = cid + 6u; EntityID = eid; LocationsWithinRange = visionMap; Range = visionRange; RangeTemplate = rangeTemplate; ViewedHistory = Map.empty; VisibleLocations = Map.empty; VisionCalculationType = visionCalculationType }
+                EatingComponent(cid + 2u, eid, 150, 300, [|Food_Carrot;Food_Grass|], 75, 150, 1).Abstract
+                FormComponent(cid + 3u, eid, RoundNumber(0u), true, true, l, "rabbit", symbol).Abstract
+                MatingComponent(cid + 4u, eid, 0.9, RoundNumber(0u), matingStatus, Rabbit).Abstract
+                MovementComponent(cid + 5u, eid, 1).Abstract
+                VisionComponent(cid + 6u, eid, visionMap, visionRange, rangeTemplate, visionCalculationType, Map.empty, Map.empty).Abstract
             |]
         Array.append 
             baseBunny
-            [| Controller { ID = cid + 1u; EntityID = eid; ControllerType = (if firstIsHuman && i = 1u then Keyboard else AI_Random); CurrentAction = Idle; CurrentActions = [|Idle|]; PotentialActions = ControllerSystem.getPotentialActions baseBunny } |]
+            [| ControllerComponent(cid + 1u, eid, (if firstIsHuman && i = 1u then Keyboard else AI_Random), Idle, [|Idle|], ControllerSystem.getPotentialActions baseBunny).Abstract |]
     //start
     match total with 
     | 0u -> game
     | _ -> 
         [|1u..total|]
         |> Array.fold (fun (g:Game) i -> 
-            Game.Entities.create g (make (Location.random game.MapSize) g.Entities.NewEntityID g.Entities.MaxComponentID i)
+            Engine.Entities.create g (make (Location.random game.MapSize) g.Entities.NewEntityID g.Entities.MaxComponentID i)
             ) game
 
 

@@ -1,30 +1,32 @@
 ﻿module ControllerSystem
 open CommonFunctions
-open CommonTypes
-open Component
-open ControllerComponent
-open GameTypes
+open ComponentEnums
+open Components
+open EngineTypes
+open GameEvents
 open System
 
 
-let private actionIsAllowed (cc:ControllerComponent) (action:ActionTypes) = cc.CurrentActions |> Array.contains action
+let private actionIsAllowed (cc:ControllerComponent) (action:ActionTypes) = 
+    cc.CurrentActions 
+    |> Array.contains action
 
 let private requiredComponents (at:ActionTypes) =
     match at with
-    | Eat -> [| EatingComponent |]
+    | Eat -> [| ComponentTypes.Eating |]
     | ExitGame -> [||]
     | Idle -> [||]
-    | Mate -> [| MatingComponent |]
-    | Move_East -> [| FormComponent; MovementComponent |]
-    | Move_North -> [| FormComponent; MovementComponent |]
-    | Move_South -> [| FormComponent; MovementComponent |]
-    | Move_West -> [| FormComponent; MovementComponent |]
+    | Mate -> [| ComponentTypes.Mating |]
+    | Move_East -> [| ComponentTypes.Form; ComponentTypes.Movement |]
+    | Move_North -> [| ComponentTypes.Form; ComponentTypes.Movement |]
+    | Move_South -> [| ComponentTypes.Form; ComponentTypes.Movement |]
+    | Move_West -> [| ComponentTypes.Form; ComponentTypes.Movement |]
 
 
-let getPotentialActions (cts:Component[]) = 
-    let ects = cts |> Array.map getComponentType
+let getPotentialActions (cts:AbstractComponent[]) = 
+    let ects = cts |> Array.map (fun (c:AbstractComponent) -> c.ComponentType)
     ActionTypes.AsArray 
-    |> Array.choose (fun a -> if requiredComponents a |> Array.forall (fun ct -> ects |> Array.contains ct) then Some a else None)
+    |> Array.choose (fun a -> if requiredComponents a |> Array.forall (fun ct -> ects |> Array.contains ct.TypeID) then Some a else None)
 
 
 let getInputs (game:Game) : Game = 
@@ -35,7 +37,7 @@ let getInputs (game:Game) : Game =
         //        renderer.Value enm (controller.EntityID)
         let handleKeyPressed (k:ConsoleKeyInfo) = 
             while Console.KeyAvailable do //Might help clear double movement keys entered in one turn
-                Console.ReadKey(true).Key |> ignore        
+                Console.ReadKey(true).Key |> ignore
             match k.Key with 
             | ConsoleKey.Escape -> Some ExitGame
             | ConsoleKey.Spacebar -> Some Idle
@@ -60,7 +62,7 @@ let getInputs (game:Game) : Game =
                 | Eat -> if EatingSystem.eatActionEnabled game.Entities cc.EntityID then Some Eat else None
                 | ExitGame -> if cc.ControllerType = Keyboard then Some ExitGame else None
                 | Idle -> Some Idle
-                | Mate -> None //if MateActionEnabled enm entityID game.round then Some Mate else None
+                | Mate -> if MatingSystem.mateActionEnabled game.Entities cc.EntityID game.Round then Some Mate else None
                 | Move_North -> if Array.contains Move_North movesAllowed then Some Move_North else None
                 | Move_East ->  if Array.contains Move_East  movesAllowed then Some Move_East  else None
                 | Move_South -> if Array.contains Move_South movesAllowed then Some Move_South else None
@@ -68,18 +70,16 @@ let getInputs (game:Game) : Game =
                 )
         match (arraysMatch newCurrent cc.CurrentActions) with
         | true -> cc
-        | false -> { cc with CurrentActions = newCurrent }
+        | false -> ControllerComponent(cc.ID, cc.EntityID, cc.ControllerType, cc.CurrentAction, newCurrent, cc.PotentialActions)
 
     let getActionForEntity (cc:ControllerComponent) =
-        {
-            cc with
-                CurrentAction = 
-                    match cc.ControllerType with
-                    | AI_Random -> 
-                        cc.CurrentActions.[random.Next(cc.CurrentActions.Length)]
-                    | Keyboard -> 
-                        awaitKeyboardInput cc
-        }
+        let currentAction = 
+            match cc.ControllerType with
+            | AI_Random -> 
+                cc.CurrentActions.[random.Next(cc.CurrentActions.Length)]
+            | Keyboard -> 
+                awaitKeyboardInput cc
+        ControllerComponent(cc.ID, cc.EntityID, cc.ControllerType, currentAction, cc.CurrentActions, cc.PotentialActions)
 
     let handleSplitInputTypes (keyboard:ControllerComponent[], ai:ControllerComponent[]) =
         ai 
@@ -88,30 +88,36 @@ let getInputs (game:Game) : Game =
 
     //start
     let newControllers = 
-        ControllerComponent
-        |> Game.Entities.getComponents_OfType game.Entities ToController
+        ComponentTypes.Controller.TypeID
+        |> Engine.Entities.getComponents_OfType game.Entities 
+        |> ToControllers
         |> Array.map getCurrentActions
         |> Array.partition (fun c -> c.ControllerType = Keyboard)
         |> handleSplitInputTypes
     newControllers
     |> Array.fold (fun g c ->
-        Game.Entities.updateComponent g (Controller c) (Some (Logging.format1 "Ok" "Controller System" "getInputs" c.EntityID (Some c.ID) (Some (c.CurrentAction,c.CurrentActions))))
+        Engine.Entities.updateComponent 
+            g 
+            c.Abstract 
+            (Some (Logging.format1 "Ok" "Controller System" "getInputs" c.EntityID (Some c.ID) (Some (c.CurrentAction,c.CurrentActions))))
         ) game
 
 
 let processInputs (game:Game) : Game =
     let convertToEventData (c:ControllerComponent) =
         match c.CurrentAction with
-        | Eat -> Action_Eat c.EntityID
-        | ExitGame -> Action_ExitGame
+        | Eat -> Action_Eat(c.EntityID).Abstract 
+        | ExitGame -> Action_ExitGame().Abstract
         //| Mate -> 
-        | Move_North | Move_East | Move_South | Move_West -> Action_Movement c
-    ControllerComponent
-    |> Game.Entities.getComponents_OfType game.Entities ToController
+        | Move_North | Move_East | Move_South | Move_West -> Action_Movement(c).Abstract
+    ComponentTypes.Controller.TypeID
+    |> Engine.Entities.getComponents_OfType game.Entities
+    |> ToControllers
     |> Array.filter (fun c -> not (Array.contains c.CurrentAction [|Idle|]))
     |> Array.sortBy (fun c -> c.CurrentAction ) 
-    |> Array.fold (fun g c -> Events.execute (convertToEventData c) g) game
+    |> Array.fold (fun g c -> Engine.Events.execute (convertToEventData c) g) game
 
 
-let onExitGame (game:Game) (_:EventData) : Game = 
+let onExitGame (game:Game) (_:AbstractEventData) : Game = 
     { game with ExitGame = true }
+

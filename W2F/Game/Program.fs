@@ -1,6 +1,5 @@
-﻿open CommonTypes
-open GameTypes
-
+﻿open EngineTypes
+open GameEvents
 
 let rec gameLoop (game:Game) = 
     game
@@ -9,42 +8,40 @@ let rec gameLoop (game:Game) =
     |> ControllerSystem.getInputs
     |> ControllerSystem.processInputs
     |> function
-    | g when g.ExitGame -> 
-        g
-        |> Game.Persistance.save
-        |> ignore // Exits
-    | g ->
-        g
-        |> Scheduler.executeSchedule
-        |> Game.Log.write
-        |> Game.Settings.saveAfterRound
-        |> Game.Round.increment
-        |> gameLoop
-
+        | g when g.ExitGame -> 
+            g
+            |> Engine.Persistance.save
+            |> ignore // Exits
+        | g ->
+            g
+            |> Engine.Scheduler.executeSchedule
+            |> Engine.Log.write
+            |> Engine.Settings.saveAfterRound
+            |> Engine.Round.increment
+            |> gameLoop
 
 Game.empty
-|> Game.Settings.setMapSize { X = 100s; Y = 25s; Z = 1s }
-|> Game.Settings.setRenderMode RenderTypes.Skip
-|> Game.Settings.setSaveEveryRound false
-|> Game.Settings.setSaveFormat SaveGameFormats.XML
-|> Events.register
+|> Engine.Events.registerListeners
     [|
-        { EventType = Event_Action_Eat;       Action = EatingSystem.onEat }
-        { EventType = Event_Action_ExitGame;  Action = ControllerSystem.onExitGame }
-        { EventType = Event_Action_Movement;  Action = MovementSystem.onMovement }
-        { EventType = Event_ComponentAdded;   Action = EatingSystem.onComponentAdded }
-        { EventType = Event_ComponentAdded;   Action = PlantGrowthSystem.onComponentAdded }
-        { EventType = Event_Metabolize;       Action = EatingSystem.onMetabolize }
-        { EventType = Event_PlantRegrowth;    Action = FoodSystem.onRegrowth }
-        //{ EventType = Event_CreateEntity;     Action = Game.onCreateEntity }
-        //{ EventType = Event_RemoveEntity;     Action = Game.onRemoveEntity }
-        //{ EventType = Event_UpdateComponent;  Action = Game.onUpdateComponent }
-        //{ EventType = Event_UpdateComponents; Action = Game.onUpdateComponents }
+        EventListener("Eating->Action",              EatingSystem.onEat,                 EventTypes.Action_Eat.TypeID)
+        EventListener("Controller->ExitGame",        ControllerSystem.onExitGame,        EventTypes.Action_ExitGame.TypeID)
+        EventListener("Movement->Action",            MovementSystem.onMovement,          EventTypes.Action_Movement.TypeID)
+        EventListener("Eating->ComponentAdded",      EatingSystem.onComponentAdded,      EngineEvent_ComponentAdded.TypeID)
+        EventListener("PlantGrowth->ComponentAdded", PlantGrowthSystem.onComponentAdded, EngineEvent_ComponentAdded.TypeID)
+        EventListener("Eating->Metabolize",          EatingSystem.onMetabolize,          EventTypes.Metabolize.TypeID)
+        EventListener("Food->Regrowth",              FoodSystem.onRegrowth,              EventTypes.PlantRegrowth.TypeID)
+        EventListener("PlantGrowth->Reproduce",      PlantGrowthSystem.onReproduce,      EventTypes.PlantReproduce.TypeID)
     |]
+|> Engine.Settings.setMapSize { X = 1000s; Y = 10s; Z = 1s }
+|> Engine.Settings.setRenderMode RenderTypes.Skip
+|> Engine.Settings.setSaveEveryRound false
+|> Engine.Settings.setSaveFormat SaveGameFormats.XML
 |> BuildWorld.createTerrain 
 |> BuildWorld.makeGrass 5u
 |> BuildWorld.makeRabbits false 3u
 |> gameLoop
+
+
 //|> Renderer.renderWorld
 //|> Game.Persistance.save LoadAndSave.XML
 

@@ -1,8 +1,7 @@
 ﻿module vision_Shadowcast
 open CommonFunctions
-open CommonTypes
-open Component
-open FormComponent
+open EngineTypes
+open Components
 open LocationFunctions
 // I ported this from: https://fadden.com/tech/ShadowCast.cs.txt
 

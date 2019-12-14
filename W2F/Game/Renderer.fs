@@ -1,12 +1,12 @@
 ﻿module Renderer
-open CommonTypes
+open EngineTypes
 open GameTypes
-open FormComponent
+open Components
 open LocationFunctions
 open System
 
 let renderWorld (game:Game) : Game = 
-    match game.RenderType with
+    match game.Settings.RenderType with
     | Skip | Entity -> game
     | World ->
         Console.CursorVisible <- false
@@ -14,7 +14,8 @@ let renderWorld (game:Game) : Game =
         Console.SetBufferSize(250,500)
         System.Console.SetWindowPosition(0,0)
     
-        let allForms = Game.Entities.getLocationMap game.Entities
+        let allForms = 
+            Engine.Entities.getLocationMap game.Entities
         let selectForm (fds:FormComponent[]) = 
             fds
             |> Array.sortByDescending (fun f -> f.ID)
@@ -22,7 +23,7 @@ let renderWorld (game:Game) : Game =
         game.MapSize
         |> mapLocations 
         |> Array.iter (fun (l:Location) -> 
-            let fd = selectForm (allForms.Item l)        
+            let fd = selectForm (allForms.Item l |> ToForms)        
             System.Console.SetCursorPosition(int l.X, int l.Y)        
             //if fd.Symbol <> '.' then 
             System.Console.Write(fd.Symbol)
@@ -31,7 +32,9 @@ let renderWorld (game:Game) : Game =
 
 
 let renderRound (game:Game) : Game = 
-    System.Console.SetCursorPosition(0, int game.MapSize.Y + 1)
+    match game.Settings.RenderType with
+    | Skip -> System.Console.SetCursorPosition(0, 0)
+    | _ -> System.Console.SetCursorPosition(0, int game.MapSize.Y + 1)
     printfn "Round: %i" game.Round.ToUint32
     game
 

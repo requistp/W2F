@@ -1,8 +1,6 @@
 ﻿module CommonFunctions
 open System
 
-let random = Random(System.DateTime.Now.DayOfYear*1000000 + System.DateTime.Now.Hour*10000000 + System.DateTime.Now.Minute*100000 + System.DateTime.Now.Second*1000 + System.DateTime.Now.Millisecond)
-
 let arraysMatch (a:'a[]) (b:'a[]) = 
     match a.Length = b.Length with
     | false -> false
@@ -38,6 +36,25 @@ let map_RemoveFromArray (map:Map<'K,'V[]>) (key:'K) (removeValue:'V) =
         let a = map.Item(key) |> Array.filter (fun v -> v <> removeValue)
         map.Remove(key).Add(key,a)
 
+let random = 
+    Random(System.DateTime.Now.DayOfYear*1000000 + System.DateTime.Now.Hour*10000000 + System.DateTime.Now.Minute*100000 + System.DateTime.Now.Second*1000 + System.DateTime.Now.Millisecond)
+
+//let TrueSomeFalseNone ifTrueFx statement =
+//    match statement with
+//    | false -> None
+//    | true -> Some ifTrueFx
+
+//let TrueOkFalseError condition ifTrueFx statement =
+//    match condition with
+//    | false -> None
+//    | true -> Some ifTrueFx
+
+//let toController (ac:AbstractComponent) = ac :?> ControllerComponent
+//let optionExec<'T> (f:('a->'T) option) (v:'a) =
+//    let t = f.Value
+//    match f.IsSome with
+//    | true -> t v
+//    | false -> v
 
 //let castEnumToArray<'a> = (Enum.GetValues(typeof<'a>) :?> ('a [])) //This only works if the enum has been assigned int values
 //let castEnumToStringArray<'a> = Enum.GetNames(typeof<'a>) 
