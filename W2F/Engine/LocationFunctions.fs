@@ -42,4 +42,4 @@ let locationsWithinRange2D (size:Location) (location:Location) (rangeTemplate:Lo
 
 
 let mapLocations (size:Location) =
-    [|0s..size.X-1s|] |> Array.collect (fun x -> [|0s..size.Y-1s|] |> Array.map (fun y -> { X=x; Y=y; Z=0s } ))
+    [|0s..size.X-1s|] |> Array.Parallel.collect (fun x -> [|0s..size.Y-1s|] |> Array.Parallel.map (fun y -> { X=x; Y=y; Z=0s } ))

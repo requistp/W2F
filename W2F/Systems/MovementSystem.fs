@@ -32,7 +32,7 @@ let onMovement (game:Game) (e:AbstractEventData) =
         | Move_East  -> East.Location
         | Move_West  -> West.Location
     match (isOnMap2D game.MapSize dest) && not (isLocationImpassible game.Entities (Some ed.ControllerComponent.EntityID) dest) with
-    | false -> { game with Log = Logging.log1 game.Log "Err" "Movement System" "onMovement" ed.ControllerComponent.EntityID (Some ed.ControllerComponent.ID) (Some (dest.ToString())) }
+    | false -> Engine.Log.append game (Logging.format1 "Err" "Movement System" "onMovement" ed.ControllerComponent.EntityID (Some ed.ControllerComponent.ID) (Some (dest.ToString())))
     | true -> 
         let forlog = Logging.format1 "Ok" "Movement System" "onMovement" ed.ControllerComponent.EntityID (Some ed.ControllerComponent.ID) (Some (dest.ToString()))
         Engine.Entities.updateComponent game (FormComponent(f.ID, f.EntityID, f.Born, f.CanSeePast, f.IsPassable, dest, f.Name, f.Symbol)).Abstract (Some forlog)

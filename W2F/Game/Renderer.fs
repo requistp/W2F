@@ -1,6 +1,5 @@
 ﻿module Renderer
 open EngineTypes
-open GameTypes
 open Components
 open LocationFunctions
 open System

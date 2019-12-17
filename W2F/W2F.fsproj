@@ -23,21 +23,9 @@
     <Compile Include="Systems\vision_Shadowcast.fs" />
     <Compile Include="Systems\VisionSystem.fs" />
     <Compile Include="Systems\ControllerSystem.fs" />
-    <Compile Include="old\Scheduler.fs" />
-    <Compile Include="old\Events.fs" />
-    <Compile Include="old\GameTypes.fs" />
-    <Compile Include="old\FoodComponent.fs" />
-    <Compile Include="old\EatingComponent.fs" />
-    <Compile Include="old\FormComponent.fs" />
-    <Compile Include="old\MatingComponent.fs" />
-    <Compile Include="old\MovementComponent.fs" />
-    <Compile Include="old\TerrainComponent.fs" />
-    <Compile Include="old\PlantGrowthComponent.fs" />
-    <Compile Include="old\ControllerComponent.fs" />
-    <Compile Include="old\VisionComponent.fs" />
-    <Compile Include="old\Component.fs" />
     <Compile Include="Game\Renderer.fs" />
     <Compile Include="Game\BuildWorld.fs" />
+    <Compile Include="Game\BuildWorldBulk.fs" />
     <Compile Include="Game\Program.fs" />
     <Content Include="Notes.txt" />
   </ItemGroup>

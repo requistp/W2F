@@ -88,6 +88,8 @@ type EntityID =
     static member (+) (EntityID m1, EntityID m2) = EntityID(m1 + m2)
     static member (+) (EntityID m1, m2:uint32) = EntityID(m1 + m2)
     static member (+) (m1:uint32, EntityID m2) = EntityID(m1 + m2)
+    static member (+) (EntityID m1, m2:int) = EntityID(m1 + uint32 m2)
+    static member (+) (m1:int, EntityID m2) = EntityID(uint32 m1 + m2)
     member me.ToUint32 = 
         let (EntityID v) = me
         v

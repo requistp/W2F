@@ -2,6 +2,7 @@
 open CalendarTimings
 open CommonFunctions
 open EngineTypes
+open LocationFunctions
 open MBrace.FsPickler
 open System
 open System.IO
@@ -17,11 +18,37 @@ module rec Entities =
             | false -> m.Add(c.ID,c)
             ) start
 
+    let private addComponentsBulk (start:Map<ComponentID,AbstractComponent>) (cts:AbstractComponent[]) =
+        cts
+        |> Array.fold (fun (m:Map<ComponentID,AbstractComponent>) (c:AbstractComponent) -> 
+            m.Add(c.ID,c)
+            ) start
+
     let private addComponentTypes (start:Map<byte,ComponentID[]>) (cts:AbstractComponent[]) =
         cts
         |> Array.fold (fun (m:Map<byte,ComponentID[]>) (c:AbstractComponent) ->
             map_AppendToArray_Unique m c.ComponentType c.ID
             ) start
+
+    let private addComponentTypesBulk (start:Map<byte,ComponentID[]>) (cts:AbstractComponent[]) =
+        [|0uy..255uy|]
+        |> Array.fold (fun (m:Map<byte,ComponentID[]>) ctid -> 
+            let a = 
+                cts 
+                |> Array.filter (fun c -> c.ComponentType = ctid)
+                |> Array.map (fun c -> c.ID)
+            match m.ContainsKey(ctid) with
+            | false -> m.Add(ctid,a)
+            | true -> 
+                let a2 = Array.append (m.Item(ctid)) a
+                m.Remove(ctid).Add(ctid,a2)
+            ) start
+
+    let private addEntitiesBulk (start:Map<EntityID,ComponentID[]>) (ctss:AbstractComponent[][]) =
+        ctss
+        |> Array.fold (fun (m:Map<EntityID,ComponentID[]>) cts ->
+            m.Add(cts.[0].EntityID,cts|>Array.map(fun c -> c.ID))
+            ) start 
 
     let private addLocation (start:Map<Location,ComponentID[]>) (cts:AbstractComponent[]) = 
         cts 
@@ -29,6 +56,39 @@ module rec Entities =
         |> Array.fold (fun (m:Map<Location,ComponentID[]>) (f:AbstractComponent_WithLocation) ->
             map_AppendToArray_Unique m f.Location f.ID
             ) start
+
+    let private addLocationBulk (mapSize:Location) (start:Map<Location,ComponentID[]>) (cts:AbstractComponent[]) = 
+        cts 
+        |> filterForLocationType
+        |> Array.groupBy (fun c -> c.Location)
+        |> Array.fold (fun (m:Map<Location,ComponentID[]>) (l,a0) ->
+            let a = a0 |> Array.map (fun c -> c.ID)
+            match m.ContainsKey(l) with
+            | false -> m.Add(l,a)
+            | true -> 
+                let a2 = Array.append (m.Item l) a
+                m.Remove(l).Add(l,a2)
+            ) start
+
+
+        //let fs = 
+        //    cts 
+        //    |> filterForLocationType
+        //    |> Array.map (fun c -> c.ID)
+        //printfn "%i" fs.Length
+        //mapSize
+        //|> mapLocations
+        //|> Array.fold (fun (m:Map<Location,ComponentID[]>) l ->
+        //    let a = 
+        //        fs 
+        //        |> Array.filter (fun (l0,a) -> l0 = l)
+        //        |> Array.Parallel.map (fun c -> c.ID)
+        //    match m.ContainsKey(l) with
+        //    | false -> m.Add(l,a)
+        //    | true -> 
+        //        let a2 = Array.append (m.Item(l)) a
+        //        m.Remove(l).Add(l,a2)
+        //    ) start
 
     let private filterForLocationType (cts:AbstractComponent[]) = 
         cts 
@@ -72,10 +132,8 @@ module rec Entities =
     //----------------------------------------------------------------------------------------------------------------------------
 
     let copy (game:Game) (eid:EntityID) : AbstractComponent[] =
-        let newEID = game.Entities.NewEntityID
-        let firstCID = game.Entities.NewComponentID
         get game.Entities eid
-        |> Array.mapi (fun i (c:AbstractComponent) -> c.Copy (firstCID+i) newEID )
+        |> Array.mapi (fun i (c:AbstractComponent) -> c.Copy (game.Entities.NewComponentID+i) (game.Entities.NewEntityID) )
 
     let create (game:Game) (cts:AbstractComponent[]) = 
         let raiseComponentEvents (cts2:AbstractComponent[]) (g2:Game) =
@@ -88,12 +146,34 @@ module rec Entities =
                         ComponentTypes = addComponentTypes game.Entities.ComponentTypes cts
                         Entities = game.Entities.Entities.Add(game.Entities.NewEntityID, cts |> Array.map (fun c -> c.ID))
                         Locations = addLocation game.Entities.Locations cts
-                        MaxComponentID = game.Entities.MaxComponentID + ComponentID(uint32 cts.Length)
+                        MaxComponentID = game.Entities.MaxComponentID + cts.Length
                         MaxEntityID = game.Entities.NewEntityID
                     }
-                //Log = Logging.log1 game.Log "Ok" "Game" "createEntity" (game.Entities.MaxEntityID + 1u) None (Some (cts.Length.ToString() + " components"))
+                Log = Engine.Log.appendLog game (Logging.format1 "Ok" "Game.Entities" "create" (game.Entities.MaxEntityID + 1u) None (Some (cts.Length.ToString() + " components")))
         }
         |> Events.execute (EngineEvent_EntityCreated cts.[0].EntityID)
+        |> raiseComponentEvents cts
+
+    let createBulk (game:Game) (ctss:AbstractComponent[][]) = 
+        let cts = 
+            ctss
+            |> Array.collect (fun cts -> cts)
+        let raiseComponentEvents (cts2:AbstractComponent[]) (g2:Game) =
+            cts2 |> Array.fold (fun g c -> Events.execute (EngineEvent_ComponentAdded c) g) g2
+        {
+            game with
+                Entities = 
+                    { game.Entities with
+                        Components = addComponentsBulk game.Entities.Components cts
+                        ComponentTypes = addComponentTypesBulk game.Entities.ComponentTypes cts
+                        Entities = addEntitiesBulk game.Entities.Entities ctss
+                        Locations = addLocationBulk game.MapSize game.Entities.Locations cts
+                        MaxComponentID = game.Entities.MaxComponentID + cts.Length
+                        MaxEntityID = game.Entities.MaxEntityID + ctss.Length
+                    }
+                Log = Engine.Log.appendLog game (Logging.format1 "Ok" "Game.Entities" "createBulk" (game.Entities.MaxEntityID + ctss.Length) None (Some (cts.Length.ToString() + " components")))
+        }
+        //|> Events.execute (EngineEvent_EntityCreated cts.[0].EntityID)
         |> raiseComponentEvents cts
 
     let exists (ent:Entities) eid = ent.Entities.ContainsKey eid
@@ -121,9 +201,12 @@ module rec Entities =
         cids 
         |> Array.map (getComponent_ByID ent)
 
-    let getComponents_OfType (ent:Entities) ct =  
-        ent.ComponentTypes.Item ct 
-        |> getComponents_ByIDs ent
+    let getComponents_OfType (ent:Entities) ct = 
+        match ent.ComponentTypes.ContainsKey ct with
+        | false -> [||]
+        | true ->
+            ent.ComponentTypes.Item ct 
+            |> getComponents_ByIDs ent
 
     let getComponentTypes (ent:Entities) (eid:EntityID) =
         eid
@@ -159,7 +242,7 @@ module rec Entities =
                             Entities = game.Entities.Entities.Remove eid
                             Locations = removeLocation game.Entities.Locations (Entities.get game.Entities eid)
                     }
-                Log = if game.Settings.LoggingOn then Logging.log1 game.Log "Ok" "Game" "removeEntity" eid None None else game.Log
+                Log = Engine.Log.appendLog game (Logging.format1 "Ok" "Game" "removeEntity" eid None None)
         }
         |> Events.execute (EngineEvent_EntityCreated eid)
 
@@ -172,14 +255,14 @@ module rec Entities =
         {
             game with 
                 Entities = updateComponents_Internal game.Entities [|c|]
-                Log = if game.Settings.LoggingOn then (if logstring.IsSome then Logging.log game.Log logstring.Value else game.Log) else game.Log
+                Log = if logstring.IsNone then game.Log else Engine.Log.appendLog game logstring.Value
         }
 
     let updateComponents (game:Game) (cts:AbstractComponent[]) (logstring:string option) = 
         {
             game with 
                 Entities = updateComponents_Internal game.Entities cts
-                Log = if game.Settings.LoggingOn then (if logstring.IsSome then Logging.log game.Log logstring.Value else game.Log) else game.Log
+                Log = if logstring.IsNone then game.Log else Engine.Log.appendLog game logstring.Value
         }
 
 
@@ -189,12 +272,12 @@ module Events =
         { 
             game with 
                 EventListeners = map_AppendToArray_NonUnique game.EventListeners el.Type el
-                Log = if game.Settings.LoggingOn then (Logging.log game.Log (sprintf "%-3s | %-20s -> %s" "Ok" "Event Listener" el.Description)) else game.Log
+                Log = Engine.Log.appendLog game (sprintf "%-3s | %-20s -> %s" "Ok" "Event Listener" el.Description)
         }        
     
     let execute (e:AbstractEventData) (game:Game) : Game =
         match (game.EventListeners.ContainsKey e.Type) with
-        | false -> if game.Settings.LoggingOn then ({ game with Log = Logging.log game.Log (sprintf "%-3s | %-20s -> %s" "" "<no listeners>" e.Description) } ) else game
+        | false -> Engine.Log.append game (sprintf "%-3s | %-20s -> %s" "" "<no listeners>" e.Description)
         | true -> 
             game.EventListeners.Item(e.Type)
             |> Array.fold (fun (g:Game) el -> el.Action g e) game
@@ -206,11 +289,23 @@ module Events =
 
 //----------------------------------------------------------------------------------------------------------
 module Log = 
+    let append (game:Game) (s:string) = 
+        { game with Log = appendLog game s }
+    
+    let appendLog (game:Game) (s:string) = 
+        match game.Settings.LoggingOn,s with
+        | false,_  -> game.Log
+        | true ,"" -> game.Log
+        | true ,_  -> Array.append game.Log [|s|]
+
     let write (game:Game) = 
         //match game.Settings.LoggingOn with 
         //| false -> game
         //| true ->           
-        // I left this remmed out so I can see if something is writing to the log
+        // I left this on so I can see if something is writing to the log
+        match game.Log with 
+        | [||] -> game
+        | _ ->
             Async.Ignore
             (
                 game.Log |> Array.iter (fun s -> Logging.writeLog (sprintf "%7i | %s" game.Round.ToUint32 s))
@@ -276,7 +371,7 @@ module Scheduler =
         { 
             game with 
                 ScheduledEvents = map_AppendToArray_NonUnique game.ScheduledEvents scheduledRound se 
-                Log = if game.Settings.LoggingOn then (Logging.log1 game.Log "Ok" "Scheduler.add" se.Event.Description se.Event.EntityID None (Some ("Round:" + scheduledRound.ToUint32.ToString()))) else game.Log
+                Log = Engine.Log.appendLog game (Logging.format1 "Ok" "Scheduler.add" se.Event.Description se.Event.EntityID None (Some ("Round:" + scheduledRound.ToUint32.ToString())))
         }
 
     let addToSchedule (se:ScheduledEvent) (game:Game) = add game true se
@@ -306,11 +401,16 @@ module Scheduler =
 
 //---------------------------------------------------------------------------------------------------------------------------
 module Settings = 
+    let exitGame (game:Game) : Game =
+        { game with ExitGame = true }
+
     let saveAfterRound (game:Game) : Game = 
         match game.Settings.SaveEveryRound with
         | false -> game
         | true -> Persistance.save game
-        
+    
+    let setLoggingOn (toggle:bool) (game:Game) : Game = { game with Settings = { game.Settings with LoggingOn = toggle } }
+
     let setMapSize (l:Location) (game:Game) : Game = { game with MapSize = l }
     
     let setRenderMode (mode:RenderTypes) (game:Game) : Game = { game with Settings = { game.Settings with RenderType = mode } }

@@ -44,7 +44,7 @@ let onEat (game:Game) (e:AbstractEventData) =
     |> getEdibleFoodsAtLocation game.Entities
     |> Array.sortByDescending (fun f -> f.FoodType.Calories) // Highest caloric food first
     |> function
-    | [||] -> if game.Settings.LoggingOn then ({ game with Log = Logging.log1 game.Log "Err" "Eating System" "eat" e.EntityID (Some eat.ID) (Some "No food at location") }) else game
+    | [||] -> Engine.Log.append game (Logging.format1 "Err" "Eating System" "eat" e.EntityID (Some eat.ID) (Some "No food at location"))
     | fs -> 
         let f = fs.[0]
         let eatenQuantity = Math.Clamp(eat.QuantityPerAction, 0, Math.Min(f.Quantity,eat.QuantityRemaining)) // Clamp by how much food is left and how much stomach space is left

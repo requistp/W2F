@@ -76,7 +76,7 @@ let onReproduce (game:Game) (e:AbstractEventData) =
     |> Result.bind checkPlantAtLocation
     |> Result.bind terrainIsSuitable
     |> Result.bind checkFoodOnParent
-    |> Result.mapError (fun e -> if game.Settings.LoggingOn then ({ game with Log = Logging.log1 game.Log "Err" "Plant Growth" "onReproduce" pg.EntityID (Some pg.ID) (Some e) }) else game )
+    |> Result.mapError (fun e -> Engine.Log.append game (Logging.format1 "Err" "Plant Growth" "onReproduce" pg.EntityID (Some pg.ID) (Some e)) )
     |> function
         | Error ge -> ge
         | Ok go -> go

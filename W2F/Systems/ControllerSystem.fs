@@ -119,5 +119,5 @@ let processInputs (game:Game) : Game =
 
 
 let onExitGame (game:Game) (_:AbstractEventData) : Game = 
-    { game with ExitGame = true }
+    Engine.Settings.exitGame game
 

@@ -3,22 +3,25 @@ open GameEvents
 
 let rec gameLoop (game:Game) = 
     game
-    |> Renderer.renderWorld 
-    |> Renderer.renderRound
-    |> ControllerSystem.getInputs
-    |> ControllerSystem.processInputs
     |> function
-        | g when g.ExitGame -> 
-            g
-            |> Engine.Persistance.save
-            |> ignore // Exits
-        | g ->
-            g
-            |> Engine.Scheduler.executeSchedule
-            |> Engine.Log.write
-            |> Engine.Settings.saveAfterRound
-            |> Engine.Round.increment
-            |> gameLoop
+    | g when g.ExitGame -> 
+        g
+        |> Engine.Persistance.save
+        |> ignore // Exits
+    | g ->
+        g
+        // Custom to game
+        |> Renderer.renderWorld 
+        |> Renderer.renderRound
+        |> ControllerSystem.getInputs
+        |> ControllerSystem.processInputs
+
+        // Engine - generic
+        |> Engine.Scheduler.executeSchedule
+        |> Engine.Log.write
+        |> Engine.Settings.saveAfterRound
+        |> Engine.Round.increment
+        |> gameLoop
 
 Game.empty
 |> Engine.Events.registerListeners
@@ -32,14 +35,21 @@ Game.empty
         EventListener("Food->Regrowth",              FoodSystem.onRegrowth,              EventTypes.PlantRegrowth.TypeID)
         EventListener("PlantGrowth->Reproduce",      PlantGrowthSystem.onReproduce,      EventTypes.PlantReproduce.TypeID)
     |]
-|> Engine.Settings.setMapSize { X = 1000s; Y = 10s; Z = 1s }
+|> Engine.Settings.setLoggingOn true
+|> Engine.Settings.setMapSize { X = 1000s; Y = 1000s; Z = 1s }
 |> Engine.Settings.setRenderMode RenderTypes.Skip
 |> Engine.Settings.setSaveEveryRound false
 |> Engine.Settings.setSaveFormat SaveGameFormats.XML
-|> BuildWorld.createTerrain 
+//|> Engine.Settings.exitGame
+
+// Initialize
+|> BuildWorldBulk.createTerrain 
 |> BuildWorld.makeGrass 5u
-|> BuildWorld.makeRabbits false 3u
+|> BuildWorld.makeRabbits true 3u
+
+// Game loop
 |> gameLoop
+
 
 
 //|> Renderer.renderWorld
