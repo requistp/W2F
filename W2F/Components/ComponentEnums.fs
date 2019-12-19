@@ -1,5 +1,5 @@
 ﻿module ComponentEnums
-open EngineTypes
+open CommonTypes
 
 
 type ActionTypes = 

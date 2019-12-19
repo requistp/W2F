@@ -36,6 +36,12 @@ let map_RemoveFromArray (map:Map<'K,'V[]>) (key:'K) (removeValue:'V) =
         let a = map.Item(key) |> Array.filter (fun v -> v <> removeValue)
         map.Remove(key).Add(key,a)
 
+let mapKeys(map: Map<'K,'V>) =
+    seq {
+        for KeyValue(key,_) in map do
+            yield key
+    } |> Set.ofSeq
+
 let random = 
     Random(System.DateTime.Now.DayOfYear*1000000 + System.DateTime.Now.Hour*10000000 + System.DateTime.Now.Minute*100000 + System.DateTime.Now.Second*1000 + System.DateTime.Now.Millisecond)
 
@@ -59,11 +65,6 @@ let random =
 //let castEnumToArray<'a> = (Enum.GetValues(typeof<'a>) :?> ('a [])) //This only works if the enum has been assigned int values
 //let castEnumToStringArray<'a> = Enum.GetNames(typeof<'a>) 
 
-//let MapKeys(map: Map<'K,'V>) =
-//    seq {
-//        for KeyValue(key,_) in map do
-//            yield key
-//    } |> Set.ofSeq
 
 //let MapKeysToArray (map) =
 //    map |> MapKeys |> Seq.toArray

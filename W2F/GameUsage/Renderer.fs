@@ -1,6 +1,7 @@
 ﻿module Renderer
-open EngineTypes
+open CommonTypes
 open Components
+open Game
 open LocationFunctions
 open System
 
@@ -13,8 +14,7 @@ let renderWorld (game:Game) : Game =
         Console.SetBufferSize(250,500)
         System.Console.SetWindowPosition(0,0)
     
-        let allForms = 
-            Engine.Entities.getLocationMap game.Entities
+        let allForms = game.Entities.get_LocationMap
         let selectForm (fds:FormComponent[]) = 
             fds
             |> Array.sortByDescending (fun f -> f.ID)

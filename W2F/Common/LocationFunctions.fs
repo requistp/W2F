@@ -1,5 +1,5 @@
 ﻿module LocationFunctions
-open EngineTypes
+open CommonTypes
 open System
 
 

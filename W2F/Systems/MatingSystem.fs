@@ -2,26 +2,26 @@
 open CommonFunctions
 open ComponentEnums
 open Components
-open EngineTypes
+open CommonTypes
 
-let private eligibleFemales (ent:Entities) (m:MatingComponent) round = 
-    m.EntityID 
-    |> Engine.Entities.getLocation ent
-    |> Engine.Entities.getAtLocationWithComponent ent Mating.TypeID (Some m.EntityID)
-    |> ToMatings
-    |> Array.filter (fun m -> m.Species = m.Species && m.MatingStatus = Female && canMate m round) // Same Species & Non-Pregnant Females & Can Retry
-
-
-let canMate (m:MatingComponent) (round:RoundNumber) =
-    (m.MatingStatus <> MatingStatus.Female_Pregnant) && (m.LastMatingAttempt = RoundNumber(0u) || m.LastMatingAttempt + m.Species.MaxMatingFrequency <= round)
+//let private eligibleFemales (ent:Entities) (m:MatingComponent) round = 
+//    m.EntityID 
+//    |> Engine.Entities.getLocation ent
+//    |> Engine.Entities.getAtLocationWithComponent ent Mating.TypeID (Some m.EntityID)
+//    |> ToMatings
+//    |> Array.filter (fun m -> m.Species = m.Species && m.MatingStatus = Female && canMate m round) // Same Species & Non-Pregnant Females & Can Retry
 
 
-let mateActionEnabled (ent:Entities) (eid:EntityID) (round:RoundNumber) =
-    let m = Engine.Entities.getComponent ent ComponentTypes.Mating.TypeID eid |> ToMating
-    match m.MatingStatus with
-    | Male when canMate m round -> 
-        (eligibleFemales ent m round).Length > 0
-    | _ -> false
+//let canMate (m:MatingComponent) (round:RoundNumber) =
+//    (m.MatingStatus <> MatingStatus.Female_Pregnant) && (m.LastMatingAttempt = RoundNumber(0u) || m.LastMatingAttempt + m.Species.MaxMatingFrequency <= round)
+
+
+//let mateActionEnabled (ent:Entities) (eid:EntityID) (round:RoundNumber) =
+//    let m = Engine.Entities.getComponent ent ComponentTypes.Mating.TypeID eid |> ToMating
+//    match m.MatingStatus with
+//    | Male when canMate m round -> 
+//        (eligibleFemales ent m round).Length > 0
+//    | _ -> false
 
 (*
 

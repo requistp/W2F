@@ -1,5 +1,5 @@
 ﻿module Logging
-open EngineTypes
+open CommonTypes
 open System
 open System.IO
 

@@ -1,5 +1,5 @@
 ﻿module GameEvents
-open EngineTypes
+open CommonTypes
 open Components
 
 

@@ -1,6 +1,6 @@
 ﻿module rec Components
 open CalendarTimings
-open EngineTypes
+open CommonTypes
 open ComponentEnums
 open System
 

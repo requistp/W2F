@@ -6,11 +6,23 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="Engine\CommonFunctions.fs" />
+    <Compile Include="Common\agent_IDManager.fs" />
+    <Compile Include="Common\CommonFunctions.fs" />
+    <Compile Include="Common\CommonTypes.fs" />
+    <Compile Include="Common\CalendarTimings.fs" />
+    <Compile Include="Common\LocationFunctions.fs" />
+    <Compile Include="Common\Logging.fs" />
+    <Compile Include="EntityManager\agent_Components.fs" />
+    <Compile Include="EntityManager\agent_ComponentTypes.fs" />
+    <Compile Include="EntityManager\agent_Entities.fs" />
+    <Compile Include="EntityManager\agent_Locations.fs" />
+    <Compile Include="EntityManager\EntityManager.fs" />
+    <Compile Include="Game\agent_Round.fs" />
+    <Compile Include="Game\Game.fs" />
+    <Compile Include="EventManager\agent_EventListeners.fs" />
+    <Compile Include="EventManager\agent_EventSchedule.fs" />
+    <Compile Include="EventManager\EventManager.fs" />
     <Compile Include="Engine\EngineTypes.fs" />
-    <Compile Include="Engine\CalendarTimings.fs" />
-    <Compile Include="Engine\LocationFunctions.fs" />
-    <Compile Include="Engine\Logging.fs" />
     <Compile Include="Engine\Engine.fs" />
     <Compile Include="Components\ComponentEnums.fs" />
     <Compile Include="Components\Components.fs" />
@@ -23,10 +35,10 @@
     <Compile Include="Systems\vision_Shadowcast.fs" />
     <Compile Include="Systems\VisionSystem.fs" />
     <Compile Include="Systems\ControllerSystem.fs" />
-    <Compile Include="Game\Renderer.fs" />
-    <Compile Include="Game\BuildWorld.fs" />
-    <Compile Include="Game\BuildWorldBulk.fs" />
-    <Compile Include="Game\Program.fs" />
+    <Compile Include="GameUsage\Renderer.fs" />
+    <Compile Include="GameUsage\BuildWorld.fs" />
+    <Compile Include="GameUsage\BuildWorldBulk.fs" />
+    <Compile Include="GameUsage\Program.fs" />
     <Content Include="Notes.txt" />
   </ItemGroup>
 
