@@ -110,8 +110,8 @@ module rec Entities =
                         MaxComponentID = game.Entities.MaxComponentID + cts.Length
                         MaxEntityID = maxeid
                     }
-                Log = Engine.Log.appendLog game (Logging.format1 "Ok" "Game.Entities" "create" maxeid None (Some (cts.Length.ToString() + " components")))
         }
+        |> Engine.Log.append (Logging.format1 "Ok" "Engine.Entities" "create" maxeid None (Some (cts.Length.ToString() + " components")))
         |> raiseCreateEntityEvents
         |> raiseComponentEvents
 
@@ -124,56 +124,56 @@ module rec Entities =
 
     let get (ent:Entities) eid = ent.Entities.Item eid |> getComponents_ByIDs ent
 
-    let getAtLocation (ent:Entities) (location:Location) = 
+    let get_AtLocation (ent:Entities) (location:Location) = 
         ent.Locations.Item(location)
         |> getComponents_ByIDs ent
         |> Array.map (fun c -> c :?> AbstractComponent_WithLocation)
 
-    let getAtLocationWithComponent (ent:Entities) (ct:ComponentTypeID) (excludeEID:EntityID option) (location:Location) =
+    let get_AtLocationWithComponent (ent:Entities) (ct:ComponentTypeID) (excludeEID:EntityID option) (location:Location) =
         location
-        |> getEntityIDsAtLocation ent
+        |> get_EntityIDsAtLocation ent
         |> Array.filter (fun eid -> excludeEID.IsNone || eid <> excludeEID.Value) // Not excluded or not me
-        |> Array.choose (tryGetComponent ent ct)
+        |> Array.choose (tryGet_Component ent ct)
 
-    let getComponent (ent:Entities) (ct:ComponentTypeID) (eid:EntityID) =
+    let get_Component (ent:Entities) (ct:ComponentTypeID) (eid:EntityID) =
         get ent eid 
         |> Array.find (fun (c:AbstractComponent) -> c.ComponentType = ct)
 
-    let getComponent_ByID (ent:Entities) cid = ent.Components.Item cid
+    let get_Component_ByID (ent:Entities) cid = ent.Components.Item cid
 
     let getComponents_ByIDs (ent:Entities) (cids:ComponentID[]) : AbstractComponent[] = 
         cids 
-        |> Array.map (getComponent_ByID ent)
+        |> Array.map (get_Component_ByID ent)
 
-    let getComponents_OfType (ent:Entities) ct = 
+    let get_Components_OfType (ent:Entities) ct = 
         match ent.ComponentTypes.ContainsKey ct with
         | false -> [||]
         | true ->
             ent.ComponentTypes.Item ct 
             |> getComponents_ByIDs ent
 
-    let getComponentTypes (ent:Entities) (eid:EntityID) =
+    let get_ComponentTypes (ent:Entities) (eid:EntityID) =
         eid
         |> get ent
         |> Array.map (fun c -> c.ComponentType) 
 
-    let getEntityIDsAtLocation (ent:Entities) location =
+    let get_EntityIDsAtLocation (ent:Entities) location =
         ent.Locations.Item(location) 
         |> getComponents_ByIDs ent
         |> Array.map (fun c -> c.EntityID) 
 
-    let getLocation (ent:Entities) (eid:EntityID) = 
-        ((getComponent ent 0uy eid) :?> AbstractComponent_WithLocation).Location 
+    let get_Location (ent:Entities) (eid:EntityID) = 
+        ((get_Component ent 0uy eid) :?> AbstractComponent_WithLocation).Location 
 
-    let getLocationMap (ent:Entities) = 
+    let get_Locations (ent:Entities) = 
         ent.Locations
         |> Map.map (fun _ cids -> cids |> getComponents_ByIDs ent)
 
-    let isLocationImpassible (ent:Entities) (excludeEID:EntityID option) (location:Location) =
+    let isLocationPassible (ent:Entities) (excludeEID:EntityID option) (location:Location) =
         location
-        |> getAtLocation ent
+        |> get_AtLocation ent
         |> Array.filter (fun c -> excludeEID.IsNone || c.EntityID <> excludeEID.Value)
-        |> Array.exists (fun c -> not c.IsPassable)
+        |> Array.forall (fun c -> c.IsPassable)
 
     let remove (eid:EntityID) (game:Game) = 
         {
@@ -186,11 +186,11 @@ module rec Entities =
                             Entities = game.Entities.Entities.Remove eid
                             Locations = removeLocation game.Entities.Locations (Entities.get game.Entities eid)
                     }
-                Log = Engine.Log.appendLog game (Logging.format1 "Ok" "Game" "removeEntity" eid None None)
         }
-        |> Events.execute (EngineEvent_EntityCreated eid)
+        |> Engine.Log.append (Logging.format1 "Ok" "Game" "removeEntity" eid None None)
+        |> Events.execute (EngineEvent_EntityRemoved eid)
 
-    let tryGetComponent (ent:Entities) (ct:ComponentTypeID) (eid:EntityID) : Option<AbstractComponent> = 
+    let tryGet_Component (ent:Entities) (ct:ComponentTypeID) (eid:EntityID) : Option<AbstractComponent> = 
         match (get ent eid) |> Array.filter (fun c -> c.ComponentType = ct) with
         | [||] -> None
         | cts -> Some cts.[0]
@@ -199,29 +199,30 @@ module rec Entities =
         {
             game with 
                 Entities = updateComponents_Internal game.Entities [|c|]
-                Log = if logstring.IsNone then game.Log else Engine.Log.appendLog game logstring.Value
         }
+        |> Engine.Log.appendo logstring
 
     let updateComponents (game:Game) (cts:AbstractComponent[]) (logstring:string option) = 
         {
             game with 
                 Entities = updateComponents_Internal game.Entities cts
-                Log = if logstring.IsNone then game.Log else Engine.Log.appendLog game logstring.Value
         }
+        |> Engine.Log.appendo logstring
 
 
 //----------------------------------------------------------------------------------------------------------
 module Events = 
+
     let private add (el:EventListener) (game:Game) : Game =
         { 
             game with 
                 EventListeners = map_AppendToArray_NonUnique game.EventListeners el.Type el
-                Log = Engine.Log.appendLog game (sprintf "%-3s | %-20s -> %s" "Ok" "Event Listener" el.Description)
-        }        
+        }
+        |> Engine.Log.append (sprintf "%-3s | %-20s -> %s" "Ok" "Event Listener" el.Description)
     
     let execute (e:AbstractEventData) (game:Game) : Game =
         match (game.EventListeners.ContainsKey e.Type) with
-        | false -> game //Engine.Log.append game (sprintf "%-3s | %-20s -> %s" "" "<no listeners>" e.Description)
+        | false -> Engine.Log.append (sprintf "%-3s | %-20s -> %s" "" "<no listeners>" e.Description) game
         | true -> 
             game.EventListeners.Item(e.Type)
             |> Array.fold (fun (g:Game) el -> el.Action g e) game
@@ -233,14 +234,32 @@ module Events =
 
 //----------------------------------------------------------------------------------------------------------
 module Log = 
-    let append (game:Game) (s:string) = 
-        { game with Log = appendLog game s }
-    
-    let appendLog (game:Game) (s:string) = 
+
+    let append (s:string) (game:Game) = 
         match game.Settings.LoggingOn,s with
-        | false,_  -> game.Log
-        | true ,"" -> game.Log
-        | true ,_  -> Array.append game.Log [|s|]
+        | false,_  -> game
+        | true ,"" -> game
+        | true ,_  -> 
+            {
+                game with Log = Array.append game.Log [|s|]
+            }
+            |> checkDumpLog
+
+    let appendo (s:string option) (game:Game) = 
+        match game.Settings.LoggingOn,s.IsNone with
+        | false,_    -> game
+        | true ,true -> game
+        | true ,false when s.Value = "" -> game
+        | true ,false -> 
+            {
+                game with Log = Array.append game.Log [|s.Value|]
+            }
+            |> checkDumpLog
+
+    let checkDumpLog (game:Game) = 
+        match game.Log.Length >= game.Settings.LogLengthMax with
+        | false -> game
+        | true -> write game
 
     let write (game:Game) = 
         //match game.Settings.LoggingOn with 
@@ -252,13 +271,17 @@ module Log =
         | _ ->
             Async.Ignore
             (
-                game.Log |> Array.iter (fun s -> Logging.writeLog (sprintf "%7i | %s" game.Round.ToUint32 s))
-            ) |> ignore
-            { game with Log = Array.empty }
+                game.Log 
+                |> Array.iter (fun s -> Logging.writeLog (sprintf "%7i | %s" game.Round.ToUint32 s))
+            ) 
+            { 
+                game with Log = Array.empty 
+            }
     
 
 //------------------------------------------------------------------------------------------------------------
-module Persistance =    
+module Persistance =   
+
     let private savePath = "./saves"
     let private binarySerializer = FsPickler.CreateBinarySerializer()
     let private xmlSerializer = FsPickler.CreateXmlSerializer(indent = true)
@@ -297,6 +320,7 @@ module Persistance =
 
 //------------------------------------------------------------------------------------------------------------
 module Round = 
+
     let increment (game:Game) : Game =
         {
             game with 
@@ -306,6 +330,7 @@ module Round =
 
 //---------------------------------------------------------------------------------------------------------------------------
 module Scheduler = 
+
     let private add (game:Game) (isNew:bool) (se:ScheduledEvent) = 
         let scheduledRound = 
             game.Round +
@@ -315,8 +340,8 @@ module Scheduler =
         { 
             game with 
                 ScheduledEvents = map_AppendToArray_NonUnique game.ScheduledEvents scheduledRound se 
-                Log = Engine.Log.appendLog game (Logging.format1 "Ok" "Scheduler.add" se.Event.Description se.Event.EntityID None (Some ("Round:" + scheduledRound.ToUint32.ToString())))
         }
+        |> Engine.Log.append (Logging.format1 "Ok" "Scheduler.add" se.Event.Description se.Event.EntityID None (Some ("Round:" + scheduledRound.ToUint32.ToString())))
 
     let addToSchedule (se:ScheduledEvent) (game:Game) = add game true se
     
@@ -345,6 +370,7 @@ module Scheduler =
 
 //---------------------------------------------------------------------------------------------------------------------------
 module Settings = 
+
     let exitGame (game:Game) : Game =
         { game with ExitGame = true }
 

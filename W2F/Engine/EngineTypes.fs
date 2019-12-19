@@ -106,9 +106,11 @@ type EventListener(description:string, action:EventAction, eventType:EventTypeID
 
 type EventTypeID = byte
 
+
 type Settings = 
     {   
         LoggingOn : bool
+        LogLengthMax : int
         RenderType : RenderTypes
         SaveEveryRound : bool
         SaveFormat : SaveGameFormats
@@ -116,6 +118,7 @@ type Settings =
     static member empty = 
         {   
             LoggingOn = false
+            LogLengthMax = 100
             RenderType = RenderTypes.World
             SaveEveryRound = false
             SaveFormat = SaveGameFormats.XML

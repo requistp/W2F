@@ -25,7 +25,6 @@
     <Compile Include="Systems\ControllerSystem.fs" />
     <Compile Include="Game\Renderer.fs" />
     <Compile Include="Game\BuildWorld.fs" />
-    <Compile Include="Game\BuildWorldBulk.fs" />
     <Compile Include="Game\Program.fs" />
     <Content Include="Notes.txt" />
   </ItemGroup>

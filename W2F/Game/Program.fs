@@ -38,16 +38,16 @@ Game.empty
         EventListener("PlantGrowth->Reproduce",      PlantGrowthSystem.onReproduce,      EventTypes.PlantReproduce.TypeID)
     |]
 |> Engine.Settings.setLoggingOn true
-|> Engine.Settings.setMapSize { X = 1000s; Y = 1000s; Z = 1s }
-|> Engine.Settings.setRenderMode RenderTypes.Skip
+|> Engine.Settings.setMapSize { X = 100s; Y = 25s; Z = 1s }
+|> Engine.Settings.setRenderMode RenderTypes.World
 |> Engine.Settings.setSaveEveryRound false
 |> Engine.Settings.setSaveFormat SaveGameFormats.XML
-|> Engine.Settings.exitGame
+//|> Engine.Settings.exitGame
 
 // Initialize
-|> BuildWorldBulk.createTerrain 
-|> BuildWorldBulk.makeGrass 5u
-|> BuildWorldBulk.makeRabbits true 3u
+|> BuildWorld.createTerrain 
+|> BuildWorld.makeGrass 5u
+|> BuildWorld.makeRabbits true 3u
 
 // Game loop
 |> gameLoop

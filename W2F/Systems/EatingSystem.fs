@@ -19,13 +19,13 @@ let private getEdibleFoods (eat:EatingComponent) (foods:FoodComponent[]) =
 
 let private getEdibleFoodsAtLocation (ent:Entities) (eat:EatingComponent) =
     eat.EntityID
-    |> Engine.Entities.getLocation ent 
+    |> Engine.Entities.get_Location ent 
     |> FoodSystem.getFoodsAtLocation ent
     |> getEdibleFoods eat
    
 
 let eatActionEnabled (ent:Entities) (eid:EntityID) =
-    let eat = Engine.Entities.getComponent ent ComponentTypes.Eating.TypeID eid |> ToEating
+    let eat = Engine.Entities.get_Component ent ComponentTypes.Eating.TypeID eid |> ToEating
     (eat. QuantityRemaining > 0) && ((getEdibleFoodsAtLocation ent eat).Length > 0)
 
 
@@ -39,12 +39,12 @@ let onComponentAdded (game:Game) (e:AbstractEventData) =
     
     
 let onEat (game:Game) (e:AbstractEventData) =
-    let eat = Engine.Entities.getComponent game.Entities Eating.TypeID e.EntityID |> ToEating
+    let eat = Engine.Entities.get_Component game.Entities Eating.TypeID e.EntityID |> ToEating
     eat
     |> getEdibleFoodsAtLocation game.Entities
     |> Array.sortByDescending (fun f -> f.FoodType.Calories) // Highest caloric food first
     |> function
-    | [||] -> Engine.Log.append game (Logging.format1 "Err" "Eating System" "eat" e.EntityID (Some eat.ID) (Some "No food at location"))
+    | [||] -> Engine.Log.append (Logging.format1 "Err" "Eating System" "eat" e.EntityID (Some eat.ID) (Some "No food at location")) game
     | fs -> 
         let f = fs.[0]
         let eatenQuantity = Math.Clamp(eat.QuantityPerAction, 0, Math.Min(f.Quantity,eat.QuantityRemaining)) // Clamp by how much food is left and how much stomach space is left
@@ -64,7 +64,7 @@ let onEat (game:Game) (e:AbstractEventData) =
         
 
 let onMetabolize (game:Game) (e:AbstractEventData) = 
-    let eat = Engine.Entities.getComponent game.Entities Eating.TypeID e.EntityID |> ToEating
+    let eat = Engine.Entities.get_Component game.Entities Eating.TypeID e.EntityID |> ToEating
     let newC = eat.Calories - eat.CaloriesPerMetabolize
     let newQ = eat.Quantity - eat.QuantityPerMetabolize
     let starving = newC < 0

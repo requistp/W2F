@@ -12,15 +12,14 @@ let onComponentAdded (game:Game) (e:AbstractEventData) =
     match (e :?> EngineEvent_ComponentAdded).Component.ComponentType = PlantGrowth.TypeID with
     | false -> game
     | true -> 
-        let pg = Entities.getComponent game.Entities PlantGrowth.TypeID e.EntityID |> ToPlantGrowth
+        let pg = Entities.get_Component game.Entities PlantGrowth.TypeID e.EntityID |> ToPlantGrowth
         game
         |> ifBind (pg.RegrowRate > 0.0)       (Scheduler.addToSchedule { ScheduleType = RepeatIndefinitely; Frequency = PlantGrowthFrequency; Event = PlantRegrowth(e.EntityID) })
         |> ifBind (pg.ReproductionRate > 0.0) (Scheduler.addToSchedule { ScheduleType = RepeatIndefinitely; Frequency = PlantGrowthFrequency; Event = PlantReproduce(e.EntityID) })
 
 
-
 let onReproduce (game:Game) (e:AbstractEventData) =
-    let pg = Entities.getComponent game.Entities ComponentTypes.PlantGrowth.TypeID e.EntityID :?> PlantGrowthComponent
+    let pg = Entities.get_Component game.Entities ComponentTypes.PlantGrowth.TypeID e.EntityID :?> PlantGrowthComponent
     let createPlant (l:Location) = 
         let adjustComponents (c:AbstractComponent) =
             c
@@ -45,23 +44,23 @@ let onReproduce (game:Game) (e:AbstractEventData) =
         | true -> Ok None
 
     let checkOnMap _ =
-        let newLocation = addOffset (Entities.getLocation game.Entities pg.EntityID) pg.ReproductionRange pg.ReproductionRange 0 false true
+        let newLocation = addOffset (Entities.get_Location game.Entities pg.EntityID) pg.ReproductionRange pg.ReproductionRange 0 false true
         match isOnMap2D game.MapSize newLocation with
         | false -> Error (sprintf "Failed: location not on map:%s" (newLocation.ToString())) 
         | true -> Ok newLocation
 
     let checkPlantAtLocation newLocation = 
-        match (Engine.Entities.getAtLocationWithComponent game.Entities PlantGrowth.TypeID None newLocation).Length with 
+        match (Engine.Entities.get_AtLocationWithComponent game.Entities PlantGrowth.TypeID None newLocation).Length with 
         | x when x > 0 -> Error (sprintf "Failed: plant exists at location:%s" (newLocation.ToString()))
         | _ -> Ok newLocation
 
     let terrainIsSuitable newLocation = 
-        match pg.GrowsInTerrain |> Array.contains (ToTerrain (Engine.Entities.getAtLocationWithComponent game.Entities Terrain.TypeID None newLocation).[0]).Terrain with
+        match pg.GrowsInTerrain |> Array.contains (ToTerrain (Engine.Entities.get_AtLocationWithComponent game.Entities Terrain.TypeID None newLocation).[0]).Terrain with
         | false -> Error "Failed: terrain is not suitable"
         | true -> Ok newLocation
 
     let checkFoodOnParent newLocation = 
-        match (Engine.Entities.tryGetComponent game.Entities ComponentTypes.Food.TypeID pg.EntityID) with
+        match (Engine.Entities.tryGet_Component game.Entities ComponentTypes.Food.TypeID pg.EntityID) with
         | None -> Ok (createPlant newLocation)
         | Some ac ->
             let f = ToFood ac
@@ -76,7 +75,7 @@ let onReproduce (game:Game) (e:AbstractEventData) =
     |> Result.bind checkPlantAtLocation
     |> Result.bind terrainIsSuitable
     |> Result.bind checkFoodOnParent
-    |> Result.mapError (fun e -> Engine.Log.append game (Logging.format1 "Err" "Plant Growth" "onReproduce" pg.EntityID (Some pg.ID) (Some e)) )
+    |> Result.mapError (fun e -> Engine.Log.append (Logging.format1 "Err" "Plant Growth" "onReproduce" pg.EntityID (Some pg.ID) (Some e)) game)
     |> function
         | Error ge -> ge
         | Ok go -> go

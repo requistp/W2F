@@ -4,6 +4,7 @@ open Components
 open LocationFunctions
 open System
 
+
 let renderWorld (game:Game) : Game = 
     match game.Settings.RenderType with
     | Skip | Entity -> game
@@ -14,7 +15,7 @@ let renderWorld (game:Game) : Game =
         System.Console.SetWindowPosition(0,0)
     
         let allForms = 
-            Engine.Entities.getLocationMap game.Entities
+            Engine.Entities.get_Locations game.Entities
         let selectForm (fds:FormComponent[]) = 
             fds
             |> Array.sortByDescending (fun f -> f.ID)

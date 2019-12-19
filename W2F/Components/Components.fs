@@ -4,6 +4,7 @@ open EngineTypes
 open ComponentEnums
 open System
 
+
 type ComponentTypes = 
     | Controller 
     | Food 
@@ -25,6 +26,7 @@ type ComponentTypes =
         | PlantGrowth -> 6uy
         | Terrain -> 7uy
         | Vision -> 8uy
+
 
 type ControllerComponent(id:ComponentID, eid:EntityID, controllerType:ControllerTypes, currentAction:ActionTypes, currentActions:ActionTypes[], potentialActions:ActionTypes[]) = 
     inherit AbstractComponent(id, eid, ComponentTypes.Controller.TypeID)

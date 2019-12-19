@@ -11,6 +11,7 @@ let private actionIsAllowed (cc:ControllerComponent) (action:ActionTypes) =
     cc.CurrentActions 
     |> Array.contains action
 
+
 let private requiredComponents (at:ActionTypes) =
     match at with
     | Eat -> [| ComponentTypes.Eating |]
@@ -89,7 +90,7 @@ let getInputs (game:Game) : Game =
     //start
     let newControllers = 
         ComponentTypes.Controller.TypeID
-        |> Engine.Entities.getComponents_OfType game.Entities 
+        |> Engine.Entities.get_Components_OfType game.Entities 
         |> ToControllers
         |> Array.map getCurrentActions
         |> Array.partition (fun c -> c.ControllerType = Keyboard)
@@ -111,7 +112,7 @@ let processInputs (game:Game) : Game =
         //| Mate -> 
         | Move_North | Move_East | Move_South | Move_West -> Action_Movement(c).Abstract
     ComponentTypes.Controller.TypeID
-    |> Engine.Entities.getComponents_OfType game.Entities
+    |> Engine.Entities.get_Components_OfType game.Entities
     |> ToControllers
     |> Array.filter (fun c -> not (Array.contains c.CurrentAction [|Idle|]))
     |> Array.sortBy (fun c -> c.CurrentAction ) 

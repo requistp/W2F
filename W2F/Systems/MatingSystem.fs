@@ -4,10 +4,11 @@ open ComponentEnums
 open Components
 open EngineTypes
 
+
 let private eligibleFemales (ent:Entities) (m:MatingComponent) round = 
     m.EntityID 
-    |> Engine.Entities.getLocation ent
-    |> Engine.Entities.getAtLocationWithComponent ent Mating.TypeID (Some m.EntityID)
+    |> Engine.Entities.get_Location ent
+    |> Engine.Entities.get_AtLocationWithComponent ent Mating.TypeID (Some m.EntityID)
     |> ToMatings
     |> Array.filter (fun m -> m.Species = m.Species && m.MatingStatus = Female && canMate m round) // Same Species & Non-Pregnant Females & Can Retry
 
@@ -17,11 +18,12 @@ let canMate (m:MatingComponent) (round:RoundNumber) =
 
 
 let mateActionEnabled (ent:Entities) (eid:EntityID) (round:RoundNumber) =
-    let m = Engine.Entities.getComponent ent ComponentTypes.Mating.TypeID eid |> ToMating
+    let m = Engine.Entities.get_Component ent ComponentTypes.Mating.TypeID eid |> ToMating
     match m.MatingStatus with
     | Male when canMate m round -> 
         (eligibleFemales ent m round).Length > 0
     | _ -> false
+
 
 (*
 
