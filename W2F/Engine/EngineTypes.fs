@@ -48,16 +48,16 @@ type DistanceType = int16
 type ComponentTypeID = byte
 
 
-type EngineEvent_ComponentAdded(ac:AbstractComponent) =
+type EngineEvent_ComponentAdded (ac:AbstractComponent) =
     inherit AbstractEventData(1uy, "Engine_ComponentAdded", ac.EntityID)
     member _.Component with get() = ac
 
 
-type EngineEvent_EntityCreated(eid:EntityID) =
+type EngineEvent_EntityCreated (eid:EntityID) =
     inherit AbstractEventData(0uy, "Engine_EntityCreated", eid)
     
 
-type EngineEvent_EntityRemoved(eid:EntityID) =
+type EngineEvent_EntityRemoved (eid:EntityID) =
     inherit AbstractEventData(2uy, "Engine_EntityRemoved", eid)
     
 

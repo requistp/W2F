@@ -121,3 +121,16 @@ let processInputs (game:Game) : Game =
 let onExitGame (game:Game) (_:AbstractEventData) : Game = 
     Engine.Settings.exitGame game
 
+    
+let onComponentAdded (game:Game) (e:AbstractEventData) : Game = 
+    let c = (e :?> EngineEvent_ComponentAdded).Component
+    match c.ComponentType = Controller.TypeID with
+    | false -> game
+    | true -> 
+        let old = c :?> ControllerComponent
+        let newPotential = getPotentialActions (Engine.Entities.get game.Entities c.EntityID)
+        Engine.Entities.updateComponent 
+            game
+            (ControllerComponent(old.ID, old.EntityID, old.ControllerType, old.CurrentAction, old.CurrentActions, newPotential))
+            (Some (Logging.format1 "Ok" "Controller System" "onComponentAdded" c.EntityID (Some c.ID) (Some newPotential)))
+    
