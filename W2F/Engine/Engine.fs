@@ -235,6 +235,11 @@ module Events =
 //----------------------------------------------------------------------------------------------------------
 module GameLoop = 
     
+    let appendSteps (steps:GameLoopStep[]) (game:Game) =
+        {
+            game with GameLoopSteps = Array.append game.GameLoopSteps steps
+        }
+
     let exit (game:Game) : Game =
         { 
             game with ExitGame = true 
