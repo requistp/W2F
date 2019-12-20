@@ -3,7 +3,7 @@ open CommonFunctions
 open ComponentEnums
 open Components
 open EngineTypes
-open GameEvents
+open EventTypes
 open System
 
 
@@ -120,7 +120,7 @@ let processInputs (game:Game) : Game =
 
 
 let onExitGame (game:Game) (_:AbstractEventData) : Game = 
-    Engine.Settings.exitGame game
+    Engine.GameLoop.exit game
 
     
 let onComponentAdded (game:Game) (e:AbstractEventData) : Game = 

@@ -14,7 +14,7 @@
     <Compile Include="Engine\Engine.fs" />
     <Compile Include="Components\ComponentEnums.fs" />
     <Compile Include="Components\Components.fs" />
-    <Compile Include="Components\GameEvents.fs" />
+    <Compile Include="Components\EventTypes.fs" />
     <Compile Include="Systems\FoodSystem.fs" />
     <Compile Include="Systems\EatingSystem.fs" />
     <Compile Include="Systems\MatingSystem.fs" />

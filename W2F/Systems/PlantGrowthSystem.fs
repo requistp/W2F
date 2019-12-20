@@ -4,7 +4,7 @@ open CommonFunctions
 open Components
 open Engine
 open EngineTypes
-open GameEvents
+open EventTypes
 open LocationFunctions
 
 

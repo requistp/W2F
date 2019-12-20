@@ -36,6 +36,11 @@ let map_RemoveFromArray (map:Map<'K,'V[]>) (key:'K) (removeValue:'V) =
         let a = map.Item(key) |> Array.filter (fun v -> v <> removeValue)
         map.Remove(key).Add(key,a)
 
+let map_ValuesToArray (m:Map<'K,'V>) =
+    m 
+    |> Map.toArray
+    |> Array.map (fun (_,v) -> v)
+
 let random = 
     Random(System.DateTime.Now.DayOfYear*1000000 + System.DateTime.Now.Hour*10000000 + System.DateTime.Now.Minute*100000 + System.DateTime.Now.Second*1000 + System.DateTime.Now.Millisecond)
 
@@ -68,12 +73,11 @@ let random =
 //let MapKeysToArray (map) =
 //    map |> MapKeys |> Seq.toArray
 
-//let MapValuesToArray (map:Map<'K,'V>) =
+//let map_ValuesToArray (map:Map<'K,'V>) =
 //    seq {
 //        for KeyValue(_,value) in map do
 //            yield value
 //    } |> Set.ofSeq |> Seq.toArray
-
 //let TrueSomeFalseNone ifTrueFx statement =
 //    match statement with
 //    | false -> None

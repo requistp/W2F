@@ -49,16 +49,16 @@ type ComponentTypeID = byte
 
 
 type EngineEvent_ComponentAdded (ac:AbstractComponent) =
-    inherit AbstractEventData(1uy, "Engine_ComponentAdded", ac.EntityID)
+    inherit AbstractEventData(1uy, "EngineEvent_ComponentAdded", ac.EntityID)
     member _.Component with get() = ac
 
 
 type EngineEvent_EntityCreated (eid:EntityID) =
-    inherit AbstractEventData(0uy, "Engine_EntityCreated", eid)
+    inherit AbstractEventData(0uy, "EngineEvent_EntityCreated", eid)
     
 
 type EngineEvent_EntityRemoved (eid:EntityID) =
-    inherit AbstractEventData(2uy, "Engine_EntityRemoved", eid)
+    inherit AbstractEventData(2uy, "EngineEvent_EntityRemoved", eid)
     
 
 type Entities = 
@@ -107,44 +107,63 @@ type EventListener(description:string, action:EventAction, eventType:EventTypeID
 type EventTypeID = byte
 
 
-type Settings = 
-    {   
-        LoggingOn : bool
-        LogLengthMax : int
-        RenderType : RenderTypes
-        SaveEveryRound : bool
-        SaveFormat : SaveGameFormats
-    }
-    static member empty = 
-        {   
-            LoggingOn = false
-            LogLengthMax = 100
-            RenderType = RenderTypes.World
-            SaveEveryRound = false
-            SaveFormat = SaveGameFormats.XML
-        }
 type Game = 
     {
         Entities : Entities
         EventListeners : Map<EventTypeID,EventListener[]>
         ExitGame : bool
+        GameLoopSteps : GameLoopStep[]
         Log : string[]
         MapSize : Location
         Round : RoundNumber
-        Settings : Settings
         ScheduledEvents : Map<RoundNumber,ScheduledEvent[]>
+        Settings : Settings
     }
     static member empty = 
         {
             Entities = Entities.empty
             EventListeners = Map.empty
             ExitGame = false
+            GameLoopSteps = Array.empty
             Log = Array.empty
             MapSize = Location.empty
             Round = RoundNumber 0u
-            Settings = Settings.empty
             ScheduledEvents = Map.empty
+            Settings = Settings.empty
         }
+    member me.toSave = 
+        {
+            Entities = me.Entities
+            MapSize = me.MapSize
+            Round = me.Round
+            ScheduledEvents = me.ScheduledEvents
+            Settings = me.Settings
+        }
+
+
+type GameSave = 
+    {
+        Entities : Entities
+        MapSize : Location
+        Round : RoundNumber
+        ScheduledEvents : Map<RoundNumber,ScheduledEvent[]>
+        Settings : Settings
+    }
+    member me.toGame = 
+        {
+            Entities = me.Entities
+            EventListeners = Map.empty
+            ExitGame = false
+            GameLoopSteps = Array.empty
+            Log = Array.empty
+            MapSize = me.MapSize
+            Round = me.Round
+            ScheduledEvents = me.ScheduledEvents
+            Settings = me.Settings
+        }
+
+
+type GameLoopStep = Game -> Game
 
 
 type Location = 
@@ -250,4 +269,24 @@ type ScheduleTypes =
     | RunOnce
 
 
+type Settings = 
+    {   
+        LoggingOn : bool
+        LogLengthMax : int
+        RenderType : RenderTypes
+        SaveEveryRound : bool
+        SaveFormat : SaveGameFormats
+        SaveOnExitGameLoop : bool
+        SaveComponentsOnly : bool
+    }
+    static member empty = 
+        {   
+            LoggingOn = false
+            LogLengthMax = 100
+            RenderType = RenderTypes.World
+            SaveEveryRound = false
+            SaveFormat = SaveGameFormats.XML
+            SaveOnExitGameLoop = false
+            SaveComponentsOnly = true
+        }
 

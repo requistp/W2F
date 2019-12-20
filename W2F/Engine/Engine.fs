@@ -7,13 +7,13 @@ open System
 open System.IO
 
 //----------------------------------------------------------------------------------------------------------
-module rec Entities =
+module Entities =
 
     let private addComponents (start:Map<ComponentID,AbstractComponent>) (cts:AbstractComponent[]) =
         cts
         |> Array.fold (fun (m:Map<ComponentID,AbstractComponent>) (c:AbstractComponent) -> m.Add(c.ID,c) ) start
 
-    let private addComponentTypes (start:Map<byte,ComponentID[]>) (cts:AbstractComponent[]) =
+    let addComponentTypes (start:Map<byte,ComponentID[]>) (cts:AbstractComponent[]) =
         cts 
         |> Array.groupBy (fun c -> c.ComponentType)
         |> Array.fold (fun (m:Map<byte,ComponentID[]>) (ctid,cts2) -> 
@@ -25,14 +25,14 @@ module rec Entities =
                 m.Remove(ctid).Add(ctid,a2)
             ) start
 
-    let private addEntities (start:Map<EntityID,ComponentID[]>) (cts:AbstractComponent[]) =
+    let addEntities (start:Map<EntityID,ComponentID[]>) (cts:AbstractComponent[]) =
         cts 
         |> Array.groupBy (fun c -> c.EntityID)
         |> Array.fold (fun (m:Map<EntityID,ComponentID[]>) (eid,cts2) ->
             m.Add(eid,cts2|>Array.map(fun c -> c.ID))
             ) start 
             
-    let private addLocation (start:Map<Location,ComponentID[]>) (cts:AbstractComponent[]) = 
+    let addLocation (start:Map<Location,ComponentID[]>) (cts:AbstractComponent[]) = 
         cts 
         |> filterForLocationType
         |> Array.groupBy (fun (c:AbstractComponent_WithLocation) -> c.Location)
@@ -168,7 +168,7 @@ module rec Entities =
     let get_Locations (ent:Entities) = 
         ent.Locations
         |> Map.map (fun _ cids -> cids |> getComponents_ByIDs ent)
-
+        
     let isLocationPassible (ent:Entities) (excludeEID:EntityID option) (location:Location) =
         location
         |> get_AtLocation ent
@@ -231,6 +231,40 @@ module Events =
         els 
         |> Array.fold (fun g el -> add el g) game
     
+
+//----------------------------------------------------------------------------------------------------------
+module GameLoop = 
+    
+    let exit (game:Game) : Game =
+        { 
+            game with ExitGame = true 
+        }
+
+    let setSteps (steps:GameLoopStep[]) (game:Game) =
+        {
+            game with GameLoopSteps = steps
+        }
+
+    let rec start (game:Game) : Game = 
+        let executeGameLoopSteps (g:Game) : Game =
+            g.GameLoopSteps
+            |> Array.fold (fun g1 step -> step g1) g
+        // Start
+        game
+        |> function
+        | g when g.ExitGame -> 
+            g
+            |> Engine.Log.write
+            |> Engine.Persistance.save
+        | g ->
+            g
+            |> executeGameLoopSteps
+            |> Engine.Scheduler.executeSchedule
+            |> Engine.Log.write
+            |> Engine.Settings.saveAfterRound
+            |> Engine.Round.increment
+            |> start
+
 
 //----------------------------------------------------------------------------------------------------------
 module Log = 
@@ -305,16 +339,45 @@ module Persistance =
     
     let load (format:SaveGameFormats) (filename:string) =
         match format with
-        | Binary -> binarySerializer.Deserialize<Game> (inputStream format filename)
-        | XML -> xmlSerializer.Deserialize<Game> (inputStream format filename)
-    
+        | Binary -> binarySerializer.Deserialize<GameSave> (inputStream format filename)
+        | XML -> xmlSerializer.Deserialize<GameSave> (inputStream format filename)
+        |> fun gs -> gs.toGame
+        |> function
+            | g when not g.Settings.SaveComponentsOnly -> g
+            | g -> 
+                let cts = g.Entities.Components |> map_ValuesToArray
+                {
+                    g with 
+                        Entities = 
+                            {
+                                g.Entities with
+                                    ComponentTypes = Entities.addComponentTypes Map.empty cts
+                                    Entities = Entities.addEntities Map.empty cts
+                                    Locations = Entities.addLocation Map.empty cts
+                            }
+                }
+
     let save (game:Game) = 
         Async.Ignore
         (
+            let save = 
+                match game.Settings.SaveComponentsOnly with
+                | false -> game.toSave
+                | true ->
+                    {
+                        game.toSave with 
+                            Entities = 
+                                {
+                                    Entities.empty with
+                                        Components = game.Entities.Components
+                                        MaxComponentID = game.Entities.MaxComponentID
+                                        MaxEntityID = game.Entities.MaxEntityID
+                                }
+                    }
             match game.Settings.SaveFormat with
-            | Binary -> binarySerializer.Serialize(outputStream game.Settings.SaveFormat game.Round, game)
-            | XML -> xmlSerializer.Serialize(outputStream game.Settings.SaveFormat game.Round, game)
-        ) |> ignore
+            | Binary -> binarySerializer.Serialize(outputStream game.Settings.SaveFormat game.Round, save)
+            | XML -> xmlSerializer.Serialize(outputStream game.Settings.SaveFormat game.Round, save)
+        )
         game
     
 
@@ -371,23 +434,24 @@ module Scheduler =
 //---------------------------------------------------------------------------------------------------------------------------
 module Settings = 
 
-    let exitGame (game:Game) : Game =
-        { game with ExitGame = true }
-
-    let saveAfterRound (game:Game) : Game = 
+    let saveAfterRound (game:Game) = 
         match game.Settings.SaveEveryRound with
         | false -> game
         | true -> Persistance.save game
     
-    let setLoggingOn (toggle:bool) (game:Game) : Game = { game with Settings = { game.Settings with LoggingOn = toggle } }
+    let setLogging (toggle:bool) (game:Game) = { game with Settings = { game.Settings with LoggingOn = toggle } }
 
-    let setMapSize (l:Location) (game:Game) : Game = { game with MapSize = l }
+    let setMapSize (l:Location) (game:Game) = { game with MapSize = l }
     
-    let setRenderMode (mode:RenderTypes) (game:Game) : Game = { game with Settings = { game.Settings with RenderType = mode } }
+    let setRenderMode (mode:RenderTypes) (game:Game) = { game with Settings = { game.Settings with RenderType = mode } }
     
-    let setSaveEveryRound (toggle:bool) (game:Game) : Game = { game with Settings = { game.Settings with SaveEveryRound = toggle } }
+    let setSaveEveryRound (toggle:bool) (game:Game) = { game with Settings = { game.Settings with SaveEveryRound = toggle } }
     
-    let setSaveFormat (format:SaveGameFormats) (game:Game) : Game = { game with Settings = { game.Settings with SaveFormat = format } }
+    let setSaveFormat (format:SaveGameFormats) (game:Game) = { game with Settings = { game.Settings with SaveFormat = format } }
+
+    let setSaveComponentsOnly (toggle:bool) (game:Game) = { game with Settings = { game.Settings with SaveComponentsOnly = toggle } }
+        
+    let setSaveOnExitGameLoop (toggle:bool) (game:Game) = { game with Settings = { game.Settings with SaveOnExitGameLoop = toggle } }
 
 
 

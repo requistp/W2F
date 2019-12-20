@@ -3,7 +3,7 @@ open EngineTypes
 open ComponentEnums
 open Components
 open Engine.Entities
-open GameEvents
+open EventTypes
 open LocationFunctions
 
 
