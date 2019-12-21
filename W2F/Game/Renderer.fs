@@ -1,4 +1,4 @@
-﻿module Renderer
+﻿module rec Renderer
 open EngineTypes
 open Components
 open LocationFunctions
@@ -15,7 +15,7 @@ let renderWorld (game:Game) : Game =
         System.Console.SetWindowPosition(0,0)
     
         let allForms = 
-            Engine.Entities.get_Locations game.Entities
+            Engine.Entities.get_LocationMap game.Entities
         let selectForm (fds:FormComponent[]) = 
             fds
             |> Array.sortByDescending (fun f -> f.ID)
@@ -39,32 +39,31 @@ let renderRound (game:Game) : Game =
     game
 
 
-(*
-member me.UpdateEntity (enm:EntityManager) (entityID:EntityID) = 
+let renderEntity (game:Game) (eid:EntityID) : unit =
     Console.CursorVisible <- false
     Console.Title <- "Entity Viewer"
     Console.Clear()
 
-    let centerX = 30
-    let centerY = 10
+    let centerX = 30s
+    let centerY = 10s
 
-    let (Vision v) = enm.GetComponent VisionComponent entityID
-    let (Form f) = enm.GetComponent FormComponent entityID
+    let v = Engine.Entities.get_Component game.Entities ComponentTypes.Vision.TypeID eid |> ToVision
+    let f = Engine.Entities.get_Component game.Entities ComponentTypes.Form.TypeID eid |> ToForm
 
     let addX = centerX - f.Location.X
     let addY = centerY - f.Location.Y
     
     v.ViewedHistory
-    |> Map.iter (fun location round -> 
-        let drawX = location.X + addX
-        let drawY = location.Y + addY
-        match drawX >= 0 && drawY >= 0 with
+    |> Map.iter (fun location fs -> 
+        let drawX = location.X + int16 addX
+        let drawY = location.Y + int16 addY
+        match drawX >= 0s && drawY >= 0s with
         | false -> ()
         | true -> 
             let drawCall = 
                 match (v.VisibleLocations.ContainsKey location) with
-                | false -> ColoredConsole.Console.DrawDarkGray
-                | true -> ColoredConsole.Console.DrawWhite
+                | false -> Renderer.Console.DrawDarkGray
+                | true -> Renderer.Console.DrawWhite
             let formChar = 
                 (
                 match (v.VisibleLocations.ContainsKey location) with
@@ -85,8 +84,40 @@ member me.UpdateEntity (enm:EntityManager) (entityID:EntityID) =
                     (v.ViewedHistory.Item location
                     |> Array.sortByDescending (fun f -> f.ID)
                     |> Array.head).Symbol
-            System.Console.SetCursorPosition(drawX,drawY)
+            System.Console.SetCursorPosition(int drawX,int drawY)
             drawCall formChar
         )
-*)
+    
+module Console =
+//http://www.fssnip.net/7Vy/title/Supersimple-thread-safe-colored-console-output
 
+// go here when I expand:
+// https://blog.vbfox.net/2016/10/17/more-fsharp-colors-in-terminal.html
+    open System
+
+    let private log =
+        let lockObj = obj()
+        fun color (s:char) ->
+            lock lockObj (fun _ ->
+                //Console.BackgroundColor <- ConsoleColor.DarkYellow
+                Console.ForegroundColor <- color
+                Console.Write(s)
+                //printfn "%s" s
+                Console.ResetColor())
+
+    let DrawMagenta = log ConsoleColor.Magenta
+    let DrawGreen = log ConsoleColor.Green
+    let DrawCyan = log ConsoleColor.Cyan
+    let DrawYellow = log ConsoleColor.Yellow
+    let DrawRed = log ConsoleColor.Red
+    let DrawBlack = log ConsoleColor.Black
+    let DrawBlue = log ConsoleColor.Blue
+    let DrawDarkBlue = log ConsoleColor.DarkBlue
+    let DrawDarkCyan = log ConsoleColor.DarkCyan
+    let DrawDarkGray = log ConsoleColor.DarkGray
+    let DrawDarkGreen = log ConsoleColor.DarkGreen
+    let DrawDarkMagenta = log ConsoleColor.DarkMagenta
+    let DrawDarkRed = log ConsoleColor.DarkRed
+    let DrawDarkYellow = log ConsoleColor.DarkYellow
+    let DrawGray = log ConsoleColor.Gray
+    let DrawWhite = log ConsoleColor.White

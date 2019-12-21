@@ -5,13 +5,18 @@ Game.empty
 |> Mechanics.Configuration.set 
     // Pre steps
     [|
+        //Mechanics.Vision.updateViewable
         Renderer.renderWorld 
         Renderer.renderRound
+        Mechanics.Controller.getInputs
+        Mechanics.Controller.processInputs
+
     |]
     // Post steps
     [||]
 |> Engine.Settings.setLogging true
-|> Engine.Settings.setRenderMode RenderTypes.World
+|> Engine.Settings.setRenderEntity (Some Renderer.renderEntity)
+|> Engine.Settings.setRenderMode RenderTypes.Skip
 |> Engine.Settings.setSaveEveryRound false
 |> Engine.Settings.setSaveFormat SaveGameFormats.XML
 |> Engine.Settings.setSaveComponentsOnly false
@@ -22,7 +27,7 @@ Game.empty
 |> Engine.Settings.setMapSize { X = 100s; Y = 25s; Z = 1s }
 |> BuildWorld.createTerrain 
 |> BuildWorld.makeGrass 5u
-|> BuildWorld.makeRabbits true 3u
+|> BuildWorld.makeRabbits false 3u
 
 // Start game loop
 |> Engine.GameLoop.start

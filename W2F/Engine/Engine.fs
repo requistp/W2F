@@ -57,7 +57,8 @@ module Entities =
             let oldF = ent.Components.Item f.ID :?> AbstractComponent_WithLocation
             match (oldF = f) with
             | true -> m
-            | false -> map_AppendToArray_Unique (map_RemoveFromArray m oldF.Location oldF.ID) f.Location f.ID
+            | false -> 
+                map_AppendToArray_Unique (map_RemoveFromArray m oldF.Location oldF.ID) f.Location f.ID
             ) ent.Locations
 
     let private removeComponents (start:Map<ComponentID,AbstractComponent>) (cids:ComponentID[]) =
@@ -76,13 +77,6 @@ module Entities =
         |> Array.fold (fun (m:Map<Location,ComponentID[]>) f ->
             map_RemoveFromArray m f.Location f.ID
             ) start
-
-    let private updateComponents_Internal (ent:Entities) (cts:AbstractComponent[]) = 
-        {
-            ent with
-                Components = addComponents ent.Components cts
-                Locations = moveLocations ent cts
-        }
 
     //----------------------------------------------------------------------------------------------------------------------------
 
@@ -122,11 +116,11 @@ module Entities =
 
     let exists (ent:Entities) eid = ent.Entities.ContainsKey eid
 
-    let get (ent:Entities) eid = ent.Entities.Item eid |> getComponents_ByIDs ent
+    let get (ent:Entities) eid = ent.Entities.Item eid |> get_Components_ByIDs ent
 
     let get_AtLocation (ent:Entities) (location:Location) = 
         ent.Locations.Item(location)
-        |> getComponents_ByIDs ent
+        |> get_Components_ByIDs ent
         |> Array.map (fun c -> c :?> AbstractComponent_WithLocation)
 
     let get_AtLocationWithComponent (ent:Entities) (ct:ComponentTypeID) (excludeEID:EntityID option) (location:Location) =
@@ -141,7 +135,7 @@ module Entities =
 
     let get_Component_ByID (ent:Entities) cid = ent.Components.Item cid
 
-    let getComponents_ByIDs (ent:Entities) (cids:ComponentID[]) : AbstractComponent[] = 
+    let get_Components_ByIDs (ent:Entities) (cids:ComponentID[]) : AbstractComponent[] = 
         cids 
         |> Array.map (get_Component_ByID ent)
 
@@ -150,7 +144,7 @@ module Entities =
         | false -> [||]
         | true ->
             ent.ComponentTypes.Item ct 
-            |> getComponents_ByIDs ent
+            |> get_Components_ByIDs ent
 
     let get_ComponentTypes (ent:Entities) (eid:EntityID) =
         eid
@@ -159,15 +153,15 @@ module Entities =
 
     let get_EntityIDsAtLocation (ent:Entities) location =
         ent.Locations.Item(location) 
-        |> getComponents_ByIDs ent
+        |> get_Components_ByIDs ent
         |> Array.map (fun c -> c.EntityID) 
 
     let get_Location (ent:Entities) (eid:EntityID) = 
         ((get_Component ent 0uy eid) :?> AbstractComponent_WithLocation).Location 
 
-    let get_Locations (ent:Entities) = 
+    let get_LocationMap (ent:Entities) = 
         ent.Locations
-        |> Map.map (fun _ cids -> cids |> getComponents_ByIDs ent)
+        |> Map.map (fun _ cids -> cids |> get_Components_ByIDs ent)
         
     let isLocationPassible (ent:Entities) (excludeEID:EntityID option) (location:Location) =
         location
@@ -196,19 +190,23 @@ module Entities =
         | cts -> Some cts.[0]
 
     let updateComponent (game:Game) (c:AbstractComponent) (logstring:string option) = 
+        let oldc = Engine.Entities.get_Component_ByID game.Entities c.ID
         {
             game with 
-                Entities = updateComponents_Internal game.Entities [|c|]
+                Entities =
+                    {
+                        game.Entities with 
+                            Components = addComponents game.Entities.Components [|c|]
+                            Locations = moveLocations game.Entities [|c|]
+                    }
         }
         |> Engine.Log.appendo logstring
+        |> Engine.Events.execute (EngineEvent_ComponentUpdated(oldc,c))
 
     let updateComponents (game:Game) (cts:AbstractComponent[]) (logstring:string option) = 
-        {
-            game with 
-                Entities = updateComponents_Internal game.Entities cts
-        }
+        cts
+        |> Array.fold (fun g c -> updateComponent g c None) game
         |> Engine.Log.appendo logstring
-
 
 //----------------------------------------------------------------------------------------------------------
 module Events = 
@@ -448,6 +446,8 @@ module Settings =
 
     let setMapSize (l:Location) (game:Game) = { game with MapSize = l }
     
+    let setRenderEntity r (game:Game) = { game with Renderer_Entity = r }
+
     let setRenderMode (mode:RenderTypes) (game:Game) = { game with Settings = { game.Settings with RenderType = mode } }
     
     let setSaveEveryRound (toggle:bool) (game:Game) = { game with Settings = { game.Settings with SaveEveryRound = toggle } }

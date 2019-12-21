@@ -30,6 +30,9 @@ type AbstractComponent_WithLocation(id:ComponentID, eid:EntityID, ct:ComponentTy
     member me.Abstract =
         me :> AbstractComponent
 
+let ToWithLocation (ac:AbstractComponent) = ac :?> AbstractComponent_WithLocation
+let ToWithLocations (acs:AbstractComponent[]) = Array.map ToWithLocation acs
+
 
 type ComponentID = 
     | ComponentID of uint32
@@ -48,17 +51,20 @@ type DistanceType = int16
 type ComponentTypeID = byte
 
 
+type EngineEvent_EntityCreated (eid:EntityID) =
+    inherit AbstractEventData(0uy, "EngineEvent_EntityCreated", eid)
+    
 type EngineEvent_ComponentAdded (ac:AbstractComponent) =
     inherit AbstractEventData(1uy, "EngineEvent_ComponentAdded", ac.EntityID)
     member _.Component with get() = ac
 
-
-type EngineEvent_EntityCreated (eid:EntityID) =
-    inherit AbstractEventData(0uy, "EngineEvent_EntityCreated", eid)
-    
-
 type EngineEvent_EntityRemoved (eid:EntityID) =
     inherit AbstractEventData(2uy, "EngineEvent_EntityRemoved", eid)
+    
+type EngineEvent_ComponentUpdated (oldc:AbstractComponent, newc:AbstractComponent) =
+    inherit AbstractEventData(3uy, "EngineEvent_ComponentUpdated", newc.EntityID)
+    member _.OldComponent with get() = oldc
+    member _.NewComponent with get() = newc
     
 
 type Entities = 
@@ -115,6 +121,7 @@ type Game =
         GameLoopSteps : GameLoopStep[]
         Log : string[]
         MapSize : Location
+        Renderer_Entity : (Game -> EntityID -> unit) option
         Round : RoundNumber
         ScheduledEvents : Map<RoundNumber,ScheduledEvent[]>
         Settings : Settings
@@ -127,6 +134,7 @@ type Game =
             GameLoopSteps = Array.empty
             Log = Array.empty
             MapSize = Location.empty
+            Renderer_Entity = None
             Round = RoundNumber 0u
             ScheduledEvents = Map.empty
             Settings = Settings.empty
@@ -157,6 +165,7 @@ type GameSave =
             GameLoopSteps = Array.empty
             Log = Array.empty
             MapSize = me.MapSize
+            Renderer_Entity = None
             Round = me.Round
             ScheduledEvents = me.ScheduledEvents
             Settings = me.Settings

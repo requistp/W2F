@@ -9,32 +9,55 @@ open EngineTypes
 open EventTypes
 open LocationFunctions
 open System
+open vision_Shadowcast
 
 
 // -----------------------------------------------------------------------------------------------------------------
 module Configuration = 
+
     let set (preSteps:GameLoopStep[]) (postSteps:GameLoopStep[]) (game:Game) : Game = 
         game
         |> Engine.Events.registerListeners
             [|
-                EventListener("Eating->Action",              Eating.onEat,                 EventTypes.Action_Eat.TypeID)
-                EventListener("Controller->ExitGame",        Controller.onExitGame,        EventTypes.Action_ExitGame.TypeID)
-                EventListener("Movement->Action",            Movement.onMovement,          EventTypes.Action_Movement.TypeID)
-                EventListener("Eating->ComponentAdded",      Eating.onComponentAdded,      Engine_ComponentAdded.TypeID)
-                EventListener("Controller->ComponentAdded",  Controller.onComponentAdded,  Engine_ComponentAdded.TypeID)
-                EventListener("PlantGrowth->ComponentAdded", PlantGrowth.onComponentAdded, Engine_ComponentAdded.TypeID)
-                EventListener("Eating->Metabolize",          Eating.onMetabolize,          EventTypes.Metabolize.TypeID)
-                EventListener("Food->Regrowth",              Food.onRegrowth,              EventTypes.PlantRegrowth.TypeID)
-                EventListener("PlantGrowth->Reproduce",      PlantGrowth.onReproduce,      EventTypes.PlantReproduce.TypeID)
+                EventListener("Common->CheckLocationChanged", Common.onComponentUpdated_CheckIfLocationChanged, EventTypes.Engine_ComponentUpdated.TypeID)
+
+                EventListener("Eating->Action",               Eating.onEat,                 EventTypes.Action_Eat.TypeID)
+                EventListener("Controller->ExitGame",         Controller.onExitGame,        EventTypes.Action_ExitGame.TypeID)
+                EventListener("Movement->Action",             Movement.onMovement,          EventTypes.Action_Movement.TypeID)
+                EventListener("Eating->ComponentAdded",       Eating.onComponentAdded,      Engine_ComponentAdded.TypeID)
+                EventListener("Controller->ComponentAdded",   Controller.onComponentAdded,  Engine_ComponentAdded.TypeID)
+                EventListener("PlantGrowth->ComponentAdded",  PlantGrowth.onComponentAdded, Engine_ComponentAdded.TypeID)
+                EventListener("Eating->Metabolize",           Eating.onMetabolize,          EventTypes.Metabolize.TypeID)
+                EventListener("Food->Regrowth",               Food.onRegrowth,              EventTypes.PlantRegrowth.TypeID)
+                EventListener("PlantGrowth->Reproduce",       PlantGrowth.onReproduce,      EventTypes.PlantReproduce.TypeID)
+                EventListener("Vision->LocationChanged",      Vision.onLocationChanged,     EventTypes.LocationChanged.TypeID)
             |]
         |> Engine.GameLoop.setSteps preSteps
-        |> Engine.GameLoop.appendSteps
-            [|
-                Controller.getInputs
-                Controller.processInputs
-            |]
-        |> Engine.GameLoop.appendSteps postSteps
+        //|> Engine.GameLoop.appendSteps
+        //    [|
+        //        Controller.getInputs
+        //        Controller.processInputs
 
+        //        Vision.updateViewable
+        //    |]
+        //|> Engine.GameLoop.appendSteps postSteps
+
+
+// -----------------------------------------------------------------------------------------------------------------
+module Common =
+
+    let onComponentUpdated_CheckIfLocationChanged (game:Game) (e:AbstractEventData) =
+        let ce = e :?> EngineEvent_ComponentUpdated
+        let oldc = ce.OldComponent
+        match oldc.ComponentType = ComponentTypes.Form.TypeID with
+        | false -> game
+        | true ->
+            let oldf = ToForm oldc
+            let newf = ToForm ce.NewComponent
+            match oldf.Location = newf.Location with
+            | true -> game
+            | false -> 
+                Engine.Events.execute (LocationChanged(oldf,newf)) game
 
 // -----------------------------------------------------------------------------------------------------------------
 module Controller = 
@@ -63,8 +86,8 @@ module Controller =
         let awaitKeyboardInput (cc:ControllerComponent) =
             let mutable _action = None            
             // Uncomment for Entity-view... 
-            //if renderer.IsSome then
-            //        renderer.Value enm (controller.EntityID)
+            if game.Renderer_Entity.IsSome then game.Renderer_Entity.Value game cc.EntityID
+
             let handleKeyPressed (k:ConsoleKeyInfo) = 
                 while Console.KeyAvailable do //Might help clear double movement keys entered in one turn
                     Console.ReadKey(true).Key |> ignore
@@ -442,5 +465,59 @@ module PlantGrowth =
             | Ok go -> go
         
     
+// -----------------------------------------------------------------------------------------------------------------
+module Vision = 
+
+    let onLocationChanged (game:Game) (e:AbstractEventData) =
+        match Engine.Entities.tryGet_Component game.Entities ComponentTypes.Vision.TypeID e.EntityID with
+        | None -> game
+        | Some vc ->
+            let f = (e :?> LocationChanged).NewForm
+            let v = ToVision vc
+            Engine.Entities.updateComponent 
+                game 
+                (VisionComponent(v.ID, v.EntityID, locationsWithinRange2D game.MapSize f.Location v.RangeTemplate, v.Range, v.RangeTemplate, v.VisionCalculationType, v.ViewedHistory, v.VisibleLocations))
+                (Some "VisionMap updated")
+
+    let updateViewable (game:Game) = 
+        let allForms = 
+            Engine.Entities.get_LocationMap game.Entities
+            |> Map.map (fun _ v -> ToForms v)
+        
+        ComponentTypes.Vision.TypeID
+        |> Engine.Entities.get_Components_OfType game.Entities
+        |> ToVisions
+        |> Array.fold (fun (g:Game) vision ->
+            let visibleLocations = 
+                match vision.VisionCalculationType with
+                | Basic_Cheating -> computeVisibility_Basic vision.LocationsWithinRange allForms
+                | Shadowcast1 -> computeVisibility_Shadowcast1 (Engine.Entities.get_Location game.Entities vision.EntityID) vision.LocationsWithinRange allForms vision.Range
     
+            let fids =
+                visibleLocations
+                |> Map.toArray
+                |> Array.collect snd
+                |> Array.map (fun f -> f.ID)
+    
+            let viewedHistory = 
+                vision.ViewedHistory
+                |> Map.fold (fun (m:Map<Location,FormComponent[]>) l fs -> 
+                    let newFS =
+                        match (m.ContainsKey l) with
+                        | true -> m.Item l
+                        | false -> fs |> Array.filter (fun f -> not (fids |> Array.contains f.ID))
+                    m.Add(l,newFS)
+                ) visibleLocations
+            
+            let newVision =
+                VisionComponent(vision.ID, vision.EntityID, vision.LocationsWithinRange, vision.Range, vision.RangeTemplate, vision.VisionCalculationType, viewedHistory, visibleLocations)
+    
+            match (newVision = vision) with
+            | true -> g
+            | false ->
+                Engine.Entities.updateComponent g newVision None
+            ) game
+    
+    
+
     

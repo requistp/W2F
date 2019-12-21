@@ -15,9 +15,7 @@ let ifBind (condition:bool) (trueFunction:'a->'a)  (value:'a) : 'a =
 let map_AppendToArray_NonUnique (map:Map<'K,'V[]>) (key:'K) (newValue:'V) =
     match (map.ContainsKey key) with
     | false -> map.Add(key,[|newValue|])
-    | true -> 
-        let a = Array.append (map.Item key) [|newValue|]
-        map.Remove(key).Add(key,a)
+    | true -> map.Add(key,Array.append (map.Item key) [|newValue|])
 
 let map_AppendToArray_Unique (map:Map<'K,'V[]>) (key:'K) (newValue:'V) =
     match (map.ContainsKey key) with
@@ -25,16 +23,12 @@ let map_AppendToArray_Unique (map:Map<'K,'V[]>) (key:'K) (newValue:'V) =
     | true -> 
         match map.Item(key) |> Array.contains newValue with
         | true -> map
-        | false ->
-            let a = Array.append (map.Item key) [|newValue|]
-            map.Remove(key).Add(key,a)
+        | false -> map.Add(key,Array.append (map.Item key) [|newValue|])
 
 let map_RemoveFromArray (map:Map<'K,'V[]>) (key:'K) (removeValue:'V) =
     match (map.ContainsKey key) with
     | false -> map
-    | true -> 
-        let a = map.Item(key) |> Array.filter (fun v -> v <> removeValue)
-        map.Remove(key).Add(key,a)
+    | true -> map.Add(key,map.Item(key) |> Array.filter (fun v -> v <> removeValue))
 
 let map_ValuesToArray (m:Map<'K,'V>) =
     m 

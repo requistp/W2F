@@ -1,8 +1,6 @@
 ﻿module vision_Shadowcast
-open CommonFunctions
 open EngineTypes
 open Components
-open LocationFunctions
 // I ported this from: https://fadden.com/tech/ShadowCast.cs.txt
 
 
@@ -24,14 +22,15 @@ let OctantTransforms =
         new OctantTransform(  1s,  0s,  0s, -1s ) // 7 SE-E
     |]
 
-let ComputeVisibility_Basic (grid:Location[]) (forms:Map<Location,FormComponent[]>) =
+
+let computeVisibility_Basic (grid:Location[]) (forms:Map<Location,FormComponent[]>) =
     grid 
     |> Array.fold (fun (m:Map<Location,FormComponent[]>) l -> 
         m.Add(l,forms.Item(l))
         ) Map.empty
 
 
-let ComputeVisibility_Shadowcast1 (viewerLocation:Location) (grid:Location[]) (forms:Map<Location,FormComponent[]>) (viewRadius:DistanceType) =
+let computeVisibility_Shadowcast1 (viewerLocation:Location) (grid:Location[]) (forms:Map<Location,FormComponent[]>) (viewRadius:DistanceType) =
     let mutable viewableMap = Map.empty<Location,FormComponent[]>  
     viewableMap <- viewableMap.Add(viewerLocation,forms.Item(viewerLocation))
 

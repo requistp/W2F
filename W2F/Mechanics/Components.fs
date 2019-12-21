@@ -120,22 +120,22 @@ type VisionComponent(id:ComponentID, eid:EntityID, locationsWithinRange:Location
 
 
 let ToController (ac:AbstractComponent) = ac :?> ControllerComponent
-let ToControllers a = Array.map ToController a
+let ToControllers (a:AbstractComponent[]) = Array.map ToController a
 let ToEating (ac:AbstractComponent) = ac :?> EatingComponent
-let ToEating2 a = Array.map ToEating a
+let ToEating2 (a:AbstractComponent[]) = Array.map ToEating a
 let ToFood (ac:AbstractComponent) = ac :?> FoodComponent
-let ToFoods a = Array.map ToFood a
+let ToFoods (a:AbstractComponent[]) = Array.map ToFood a
 let ToForm (ac:AbstractComponent) = ac :?> FormComponent
-let ToForms a = Array.map ToForm a
+let ToForms (a:AbstractComponent[]) = Array.map ToForm a
 let ToMating (ac:AbstractComponent) = ac :?> MatingComponent
-let ToMatings a = Array.map ToMating a
+let ToMatings (a:AbstractComponent[]) = Array.map ToMating a
 let ToMovement (ac:AbstractComponent) = ac :?> MovementComponent
-let ToMovements a = Array.map ToMovement a
+let ToMovements (a:AbstractComponent[]) = Array.map ToMovement a
 let ToPlantGrowth (ac:AbstractComponent) = ac :?> PlantGrowthComponent
-let ToPlantGrowths a = Array.map ToPlantGrowth a
+let ToPlantGrowths (a:AbstractComponent[]) = Array.map ToPlantGrowth a
 let ToTerrain (ac:AbstractComponent) = ac :?> TerrainComponent
-let ToTerrains a = Array.map ToTerrain a
+let ToTerrains (a:AbstractComponent[]) = Array.map ToTerrain a
 let ToVision (ac:AbstractComponent) = ac :?> VisionComponent
-let ToVisions a = Array.map ToVision a
+let ToVisions (a:AbstractComponent[]) = Array.map ToVision a
 
 

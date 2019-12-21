@@ -68,7 +68,7 @@ let makeRabbits (firstIsHuman:bool) (total:uint32) (game:Game) : Game =
         let visionRange = 10s
         let rangeTemplate = rangeTemplate2D visionRange
         let visionMap = locationsWithinRange2D game.MapSize l rangeTemplate 
-        let visionCalculationType = Shadowcast1
+        let visionCalculationType = VisionCalculationTypes.Shadowcast1
         let baseBunny = 
             [|
                 ControllerComponent(_cid + 0u, _eid, (if firstIsHuman && i = 1u then Keyboard else AI_Random), Idle, [|Idle|], [|Idle|]).Abstract

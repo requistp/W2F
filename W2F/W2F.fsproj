@@ -15,9 +15,9 @@
     <Compile Include="Mechanics\ComponentEnums.fs" />
     <Compile Include="Mechanics\Components.fs" />
     <Compile Include="Mechanics\EventTypes.fs" />
-    <Compile Include="Mechanics\Mechanics.fs" />
     <Compile Include="Mechanics\vision_Shadowcast.fs" />
     <Compile Include="Mechanics\VisionSystem.fs" />
+    <Compile Include="Mechanics\Mechanics.fs" />
     <Compile Include="Game\Renderer.fs" />
     <Compile Include="Game\BuildWorld.fs" />
     <Compile Include="Game\Program.fs" />
