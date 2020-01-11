@@ -9,30 +9,43 @@ open System.IO
 //----------------------------------------------------------------------------------------------------------
 module Entities =
 
-    let private addComponents (start:Map<ComponentID,AbstractComponent>) (cts:AbstractComponent[]) =
-        cts
-        |> Array.fold (fun (m:Map<ComponentID,AbstractComponent>) (c:AbstractComponent) -> m.Add(c.ID,c) ) start
+    let private addComponents_Internal (cts:AbstractComponent[]) (game:Game) =
+        { 
+            game with 
+                Entities = 
+                    {
+                        game.Entities with
+                            Components = addComponentsToMap game.Entities.Components cts
+                            //ComponentTypes = addComponentTypesToMap game.Entities.ComponentTypes cts
+                            Entities = addEntitiesToMap game.Entities.Entities cts
+                            //Locations = addLocationsToMap game.Entities.Locations cts
+                            MaxComponentID = game.Entities.MaxComponentID + cts.Length
+                            MaxEntityID = EntityID (cts |> Array.map (fun c -> c.EntityID.ToUint32) |> Array.max)
+                    }
+        }
 
-    let addComponentTypes (start:Map<byte,ComponentID[]>) (cts:AbstractComponent[]) =
+    let private addComponentsToMap (start:Map<ComponentID,AbstractComponent>) (cts:AbstractComponent[]) =
+        cts
+        |> Array.fold (fun (m:Map<ComponentID,AbstractComponent>) (c:AbstractComponent) -> m.Add(c.ID,c)) start
+
+    let private addComponentTypesToMap (start:Map<byte,ComponentID[]>) (cts:AbstractComponent[]) =
         cts 
         |> Array.groupBy (fun c -> c.ComponentType)
         |> Array.fold (fun (m:Map<byte,ComponentID[]>) (ctid,cts2) -> 
             let a = Array.map (fun (c:AbstractComponent) -> c.ID) cts2
             match m.ContainsKey(ctid) with
             | false -> m.Add(ctid,a)
-            | true -> 
-                let a2 = Array.append (m.Item(ctid)) a
-                m.Remove(ctid).Add(ctid,a2)
+            | true -> m.Add(ctid,Array.append (m.Item(ctid)) a)
             ) start
 
-    let addEntities (start:Map<EntityID,ComponentID[]>) (cts:AbstractComponent[]) =
+    let private addEntitiesToMap (start:Map<EntityID,ComponentID[]>) (cts:AbstractComponent[]) =
         cts 
         |> Array.groupBy (fun c -> c.EntityID)
         |> Array.fold (fun (m:Map<EntityID,ComponentID[]>) (eid,cts2) ->
             m.Add(eid,cts2|>Array.map(fun c -> c.ID))
             ) start 
-            
-    let addLocation (start:Map<Location,ComponentID[]>) (cts:AbstractComponent[]) = 
+
+    let private addLocationsToMap (start:Map<Location,ComponentID[]>) (cts:AbstractComponent[]) = 
         cts 
         |> filterForLocationType
         |> Array.groupBy (fun (c:AbstractComponent_WithLocation) -> c.Location)
@@ -40,9 +53,7 @@ module Entities =
             let a = a0 |> Array.map (fun c -> c.ID)
             match m.ContainsKey(l) with
             | false -> m.Add(l,a)
-            | true -> 
-                let a2 = Array.append (m.Item l) a
-                m.Remove(l).Add(l,a2)
+            | true -> m.Add(l,Array.append (m.Item l) a)
             ) start
 
     let private filterForLocationType (cts:AbstractComponent[]) = 
@@ -50,35 +61,95 @@ module Entities =
         |> Array.filter (fun c -> c.ComponentType = 0uy)
         |> Array.map (fun c -> c :?> AbstractComponent_WithLocation)
 
-    let private moveLocations (ent:Entities) (cts:AbstractComponent[]) = 
-        cts 
-        |> filterForLocationType
-        |> Array.fold (fun (m:Map<Location,ComponentID[]>) (f:AbstractComponent_WithLocation) ->
-            let oldF = ent.Components.Item f.ID :?> AbstractComponent_WithLocation
-            match (oldF = f) with
-            | true -> m
-            | false -> 
-                map_AppendToArray_Unique (map_RemoveFromArray m oldF.Location oldF.ID) f.Location f.ID
-            ) ent.Locations
+    let private removeComponents_Internal (cts:AbstractComponent[]) (game:Game) =
+        let removeComponents (start:Map<ComponentID,AbstractComponent>) (cts:AbstractComponent[]) =
+            cts
+            |> Array.fold (fun (m:Map<ComponentID,AbstractComponent>) c -> m.Remove c.ID) start
+        let removeComponentTypes (start:Map<byte,ComponentID[]>) (cts:AbstractComponent[]) =
+            cts
+            |> Array.fold (fun (m:Map<byte,ComponentID[]>) c -> 
+                map_RemoveFromArray m c.ComponentType c.ID
+                ) start
+        let removeEntities (start:Map<EntityID,ComponentID[]>) (cts:AbstractComponent[]) =
+            cts
+            |> Array.fold (fun (m:Map<EntityID,ComponentID[]>) c -> 
+                match m.ContainsKey c.EntityID with
+                | false -> m
+                | true -> m.Remove c.EntityID
+                ) start
+        let removeLocation (start:Map<Location,ComponentID[]>) (cts:AbstractComponent[]) = 
+            cts 
+            |> filterForLocationType
+            |> Array.fold (fun (m:Map<Location,ComponentID[]>) f ->
+                map_RemoveFromArray m f.Location f.ID
+                ) start
+        {
+            game with 
+                Entities = 
+                    {
+                        game.Entities with
+                            Components = removeComponents game.Entities.Components cts
+                            ComponentTypes = removeComponentTypes game.Entities.ComponentTypes cts
+                            Entities = removeEntities game.Entities.Entities cts
+                            Locations = removeLocation game.Entities.Locations cts
+                    }
+        }
 
-    let private removeComponents (start:Map<ComponentID,AbstractComponent>) (cids:ComponentID[]) =
-        cids
-        |> Array.fold (fun (m:Map<ComponentID,AbstractComponent>) cid -> m.Remove cid) start
-
-    let private removeComponentTypes (start:Map<byte,ComponentID[]>) (cts:AbstractComponent[]) =
-        cts
-        |> Array.fold (fun (m:Map<byte,ComponentID[]>) c -> 
-            map_RemoveFromArray m c.ComponentType c.ID
-            ) start
-
-    let private removeLocation (start:Map<Location,ComponentID[]>) (cts:AbstractComponent[]) = 
-        cts 
-        |> filterForLocationType
-        |> Array.fold (fun (m:Map<Location,ComponentID[]>) f ->
-            map_RemoveFromArray m f.Location f.ID
-            ) start
-
+    let private updateComponent_Internal (c:AbstractComponent) (game:Game) =
+        let moveLocations (ent:Entities) (cts:AbstractComponent[]) = 
+            cts 
+            |> filterForLocationType
+            |> Array.fold (fun (m:Map<Location,ComponentID[]>) (f:AbstractComponent_WithLocation) ->
+                let oldF = ent.Components.Item f.ID :?> AbstractComponent_WithLocation
+                match (oldF = f) with
+                | true -> m
+                | false -> 
+                    map_AppendToArray_Unique (map_RemoveFromArray m oldF.Location oldF.ID) f.Location f.ID
+                ) ent.Locations
+        {
+            game with 
+                Entities =
+                    {
+                        game.Entities with 
+                            Components = addComponentsToMap game.Entities.Components [|c|]
+                            Locations = moveLocations game.Entities [|c|]
+                    }
+        }
+        
     //----------------------------------------------------------------------------------------------------------------------------
+
+    //let addComponent (game:Game) (c:AbstractComponent) = 
+    //    {
+    //        game with
+    //            Entities = 
+    //                { 
+    //                    game.Entities with
+    //                        Components = addComponents game.Entities.Components [|c|]
+    //                        ComponentTypes = addComponentTypes game.Entities.ComponentTypes [|c|]
+    //                        Entities = addEntities game.Entities.Entities [|c|]
+    //                        Locations = addLocation game.Entities.Locations [|c|]
+    //                        MaxComponentID = c.ID
+    //                }
+    //    }
+    //    |> Engine.Transactions.add (Add c)
+    //    |> Engine.Log.append (Logging.format1 "Ok" "Engine.Entities" "addComponent" c.EntityID (Some c.ID) (Some c.ComponentType))
+    //    |> Events.execute (EngineEvent_ComponentAdded c)
+
+    let testCreateIndex (game:Game) = 
+        {
+            game with 
+                Entities = 
+                    {
+                        game.Entities with
+                            Entities = 
+                                game.Entities.Components
+                                |> map_ValuesToArray
+                                |> Array.groupBy (fun c -> c.EntityID)
+                                |> Array.fold (fun (m:Map<EntityID,ComponentID[]>) (eid,cts2) ->
+                                    m.Add(eid,cts2|>Array.map(fun c -> c.ID))
+                                    ) Map.empty
+                    }
+        }
 
     let copy (game:Game) (eid:EntityID) : AbstractComponent[] =
         get game.Entities eid
@@ -93,18 +164,9 @@ module Entities =
             |> Array.groupBy (fun c -> c.EntityID)
             |> Array.fold (fun g (eid,_) -> Events.execute (EngineEvent_EntityCreated eid) g) g2
         let maxeid = EntityID (cts |> Array.map (fun c -> c.EntityID.ToUint32) |> Array.max)
-        {
-            game with
-                Entities = 
-                    { 
-                        Components = addComponents game.Entities.Components cts
-                        ComponentTypes = addComponentTypes game.Entities.ComponentTypes cts
-                        Entities = addEntities game.Entities.Entities cts
-                        Locations = addLocation game.Entities.Locations cts
-                        MaxComponentID = game.Entities.MaxComponentID + cts.Length
-                        MaxEntityID = maxeid
-                    }
-        }
+        game 
+        |> Engine.Transactions.adds (cts |> Array.map (fun c -> Add c))
+        |> Engine.Entities.addComponents_Internal cts
         |> Engine.Log.append (Logging.format1 "Ok" "Engine.Entities" "create" maxeid None (Some (cts.Length.ToString() + " components")))
         |> raiseCreateEntityEvents
         |> raiseComponentEvents
@@ -169,19 +231,24 @@ module Entities =
         |> Array.filter (fun c -> excludeEID.IsNone || c.EntityID <> excludeEID.Value)
         |> Array.forall (fun c -> c.IsPassable)
 
-    let remove (eid:EntityID) (game:Game) = 
+    let reloadEntities (game:Game) (cts:AbstractComponent[]) =
         {
             game with 
                 Entities = 
                     {
                         game.Entities with
-                            Components = removeComponents game.Entities.Components (game.Entities.Entities.Item eid)
-                            ComponentTypes = removeComponentTypes game.Entities.ComponentTypes (Entities.get game.Entities eid)
-                            Entities = game.Entities.Entities.Remove eid
-                            Locations = removeLocation game.Entities.Locations (Entities.get game.Entities eid)
+                            ComponentTypes = addComponentTypesToMap Map.empty cts
+                            Entities = addEntitiesToMap Map.empty cts
+                            Locations = addLocationsToMap Map.empty cts
                     }
         }
-        |> Engine.Log.append (Logging.format1 "Ok" "Game" "removeEntity" eid None None)
+
+    let remove (eid:EntityID) (logstring:string option) (game:Game) = 
+        let cts = Entities.get game.Entities eid
+        game
+        |> Engine.Transactions.adds (cts |> Array.map (fun c -> Remove c))
+        |> removeComponents_Internal cts
+        |> Engine.Log.append (Logging.format1 "Ok" "Game" "removeEntity" eid None logstring)
         |> Events.execute (EngineEvent_EntityRemoved eid)
 
     let tryGet_Component (ent:Entities) (ct:ComponentTypeID) (eid:EntityID) : Option<AbstractComponent> = 
@@ -191,30 +258,24 @@ module Entities =
 
     let updateComponent (game:Game) (c:AbstractComponent) (logstring:string option) = 
         let oldc = Engine.Entities.get_Component_ByID game.Entities c.ID
-        {
-            game with 
-                Entities =
-                    {
-                        game.Entities with 
-                            Components = addComponents game.Entities.Components [|c|]
-                            Locations = moveLocations game.Entities [|c|]
-                    }
-        }
+        game
+        |> Engine.Transactions.add (Update (oldc,c))
+        |> Engine.Entities.updateComponent_Internal c
         |> Engine.Log.appendo logstring
-        |> Engine.Events.execute (EngineEvent_ComponentUpdated(oldc,c))
+        |> Engine.Events.execute (EngineEvent_ComponentUpdated (oldc,c))
 
     let updateComponents (game:Game) (cts:AbstractComponent[]) (logstring:string option) = 
         cts
         |> Array.fold (fun g c -> updateComponent g c None) game
         |> Engine.Log.appendo logstring
 
+
 //----------------------------------------------------------------------------------------------------------
 module Events = 
 
     let private add (el:EventListener) (game:Game) : Game =
         { 
-            game with 
-                EventListeners = map_AppendToArray_NonUnique game.EventListeners el.Type el
+            game with EventListeners = map_AppendToArray_NonUnique game.EventListeners el.Type el
         }
         |> Engine.Log.append (sprintf "%-3s | %-20s -> %s" "Ok" "Event Listener" el.Description)
     
@@ -348,39 +409,18 @@ module Persistance =
         |> function
             | g when not g.Settings.SaveComponentsOnly -> g
             | g -> 
-                let cts = g.Entities.Components |> map_ValuesToArray
-                {
-                    g with 
-                        Entities = 
-                            {
-                                g.Entities with
-                                    ComponentTypes = Entities.addComponentTypes Map.empty cts
-                                    Entities = Entities.addEntities Map.empty cts
-                                    Locations = Entities.addLocation Map.empty cts
-                            }
-                }
+                g.Entities.Components 
+                |> map_ValuesToArray
+                |> Engine.Entities.reloadEntities g
 
     let save (game:Game) = 
-        Async.Ignore
-        (
-            let save = 
-                match game.Settings.SaveComponentsOnly with
-                | false -> game.toSave
-                | true ->
-                    {
-                        game.toSave with 
-                            Entities = 
-                                {
-                                    Entities.empty with
-                                        Components = game.Entities.Components
-                                        MaxComponentID = game.Entities.MaxComponentID
-                                        MaxEntityID = game.Entities.MaxEntityID
-                                }
-                    }
-            match game.Settings.SaveFormat with
-            | Binary -> binarySerializer.Serialize(outputStream game.Settings.SaveFormat game.Round, save)
-            | XML -> xmlSerializer.Serialize(outputStream game.Settings.SaveFormat game.Round, save)
-        )
+        if game.Settings.SaveOnExitGameLoop then
+            Async.Ignore
+            (
+                match game.Settings.SaveFormat with
+                | Binary -> binarySerializer.Serialize(outputStream game.Settings.SaveFormat game.Round, game.toSave)
+                | XML -> xmlSerializer.Serialize(outputStream game.Settings.SaveFormat game.Round, game.toSave)
+            )
         game
     
 
@@ -458,5 +498,46 @@ module Settings =
         
     let setSaveOnExitGameLoop (toggle:bool) (game:Game) = { game with Settings = { game.Settings with SaveOnExitGameLoop = toggle } }
 
+
+//---------------------------------------------------------------------------------------------------------------------------
+module Transactions =
+    
+    let add (tt:TransactionTypes) (game:Game) = adds [|tt|] game
+
+    let adds (tts:TransactionTypes[]) (game:Game) =
+        let startID = game.TransactionLog.NewID()
+        let a = 
+            tts
+            |> Array.mapi (fun i tt -> { ID = startID + uint64 i; Type = tt})
+        {
+            game with
+                TransactionLog = 
+                    {
+                        game.TransactionLog with 
+                            MaxID = startID + uint64 (tts.Length - 1)
+                            Transactions = Array.append game.TransactionLog.Transactions a
+                    }
+        }
+        |> checkDumpLog
+
+    let private checkDumpLog (game:Game) =
+        match game.TransactionLog.Transactions.Length >= game.TransactionLog.DumpLimit with
+        | false -> game
+        | true -> dumpLog game
+
+    let private dumpLog (game:Game) =
+        //let l = game.TransactionLog.Transactions
+        //Write l to file
+        { 
+            game with TransactionLog = { game.TransactionLog with Transactions = [||] } 
+        }
+
+    let setDumpLimit (limit:int) (game:Game) =
+        {
+            game with TransactionLog = { game.TransactionLog with DumpLimit = limit }
+        }
+
+    let write (game:Game) =
+        dumpLog game
 
 

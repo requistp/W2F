@@ -14,20 +14,21 @@ Game.empty
     |]
     // Post steps
     [||]
-|> Engine.Settings.setLogging true
+|> Engine.Settings.setLogging false
 |> Engine.Settings.setRenderEntity (Some Renderer.renderEntity)
 |> Engine.Settings.setRenderMode RenderTypes.Skip
 |> Engine.Settings.setSaveEveryRound false
 |> Engine.Settings.setSaveFormat SaveGameFormats.XML
-|> Engine.Settings.setSaveComponentsOnly false
-|> Engine.Settings.setSaveOnExitGameLoop true
-//|> Engine.GameLoop.exit
+|> Engine.Settings.setSaveComponentsOnly true
+|> Engine.Settings.setSaveOnExitGameLoop false
+|> Engine.GameLoop.exit
 
 // Setup map & world stuff
-|> Engine.Settings.setMapSize { X = 100s; Y = 25s; Z = 1s }
+|> Engine.Settings.setMapSize { X = 1000s; Y = 1000s; Z = 1s }
 |> BuildWorld.createTerrain 
 |> BuildWorld.makeGrass 5u
 |> BuildWorld.makeRabbits false 3u
+|> Engine.Entities.testCreateIndex
 
 // Start game loop
 |> Engine.GameLoop.start

@@ -86,7 +86,7 @@ module Controller =
         let awaitKeyboardInput (cc:ControllerComponent) =
             let mutable _action = None            
             // Uncomment for Entity-view... 
-            if game.Renderer_Entity.IsSome then game.Renderer_Entity.Value game cc.EntityID
+            if game.Settings.RenderType = RenderTypes.Entity && game.Renderer_Entity.IsSome then game.Renderer_Entity.Value game cc.EntityID
 
             let handleKeyPressed (k:ConsoleKeyInfo) = 
                 while Console.KeyAvailable do //Might help clear double movement keys entered in one turn
@@ -171,6 +171,7 @@ module Controller =
         Engine.GameLoop.exit game
         
     let onComponentAdded (game:Game) (e:AbstractEventData) : Game = 
+        //game
         let c = (e :?> EngineEvent_ComponentAdded).Component
         match c.ComponentType = Controller.TypeID with
         | false -> game
@@ -232,7 +233,7 @@ module Eating =
                     FoodComponent(f.ID, f.EntityID, f.FoodType, newFoodQuantity, f.QuantityMax)
                 |]
                 (Some (Logging.format1 "Ok" "Eating System" "eat" e.EntityID (Some eat.ID) (Some note)))
-            |> ifBind killFood (Engine.Entities.remove f.EntityID)
+            |> ifBind killFood (Engine.Entities.remove f.EntityID None)
     
     let onMetabolize (game:Game) (e:AbstractEventData) = 
         let eat = Engine.Entities.get_Component game.Entities Eating.TypeID e.EntityID |> ToEating

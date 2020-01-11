@@ -125,6 +125,7 @@ type Game =
         Round : RoundNumber
         ScheduledEvents : Map<RoundNumber,ScheduledEvent[]>
         Settings : Settings
+        TransactionLog : TransactionLog
     }
     static member empty = 
         {
@@ -138,15 +139,32 @@ type Game =
             Round = RoundNumber 0u
             ScheduledEvents = Map.empty
             Settings = Settings.empty
+            TransactionLog = TransactionLog.empty
         }
     member me.toSave = 
-        {
-            Entities = me.Entities
-            MapSize = me.MapSize
-            Round = me.Round
-            ScheduledEvents = me.ScheduledEvents
-            Settings = me.Settings
-        }
+        match me.Settings.SaveComponentsOnly with
+        | false -> 
+            {
+                Entities = me.Entities
+                MapSize = me.MapSize
+                Round = me.Round
+                ScheduledEvents = me.ScheduledEvents
+                Settings = me.Settings
+            }
+        | true ->
+            {
+                Entities = 
+                    {
+                        me.Entities with
+                            ComponentTypes = Map.empty
+                            Entities = Map.empty
+                            Locations = Map.empty
+                    }
+                MapSize = me.MapSize
+                Round = me.Round
+                ScheduledEvents = me.ScheduledEvents
+                Settings = me.Settings
+            }
 
 
 type GameSave = 
@@ -159,16 +177,12 @@ type GameSave =
     }
     member me.toGame = 
         {
-            Entities = me.Entities
-            EventListeners = Map.empty
-            ExitGame = false
-            GameLoopSteps = Array.empty
-            Log = Array.empty
-            MapSize = me.MapSize
-            Renderer_Entity = None
-            Round = me.Round
-            ScheduledEvents = me.ScheduledEvents
-            Settings = me.Settings
+            Game.empty with
+                Entities = me.Entities
+                MapSize = me.MapSize
+                Round = me.Round
+                ScheduledEvents = me.ScheduledEvents
+                Settings = me.Settings
         }
 
 
@@ -298,4 +312,43 @@ type Settings =
             SaveOnExitGameLoop = false
             SaveComponentsOnly = true
         }
+
+
+type TransactionID =  
+    | TransactionID of uint64
+    member me.ToUint64 = 
+        let (TransactionID v) = me
+        v
+    static member (+) (TransactionID m1, TransactionID m2) = TransactionID (m1 + m2)
+    static member (+) (TransactionID m1, m2:uint64) = TransactionID (m1 + m2)
+    static member (+) (m1:uint64, TransactionID m2) = TransactionID (m1 + m2)
+        
+
+type TransactionTypes = 
+    | Add of AbstractComponent
+    | Remove of AbstractComponent
+    | RoundIncrement
+    | Update of oldc:AbstractComponent * newc:AbstractComponent
+
+
+type Transaction =
+    {
+        ID : TransactionID
+        Type : TransactionTypes
+    }
+
+type TransactionLog = 
+    {
+        DumpLimit : int
+        MaxID : TransactionID
+        Transactions : Transaction[]
+    }
+    static member empty =
+        {
+            DumpLimit = 1000
+            MaxID = TransactionID 0UL
+            Transactions = Array.empty
+        }
+    member me.NewID() = me.MaxID + 1UL
+
 

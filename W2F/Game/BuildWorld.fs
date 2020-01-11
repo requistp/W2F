@@ -36,6 +36,12 @@ let createTerrain (game:Game) =
     |> Array.collect (fun l -> make l)
     |> Engine.Entities.create game
 
+    //game.MapSize
+    //|> mapLocations 
+    //|> Array.fold (fun (g:Game) l -> 
+    //    //printfn "%i" g.Entities.MaxEntityID.ToUint32
+    //    Engine.Entities.create g (make l)
+    //    ) game
 
 let makeGrass (n:uint32) (game:Game) : Game =
     let mutable _eid = game.Entities.NewEntityID

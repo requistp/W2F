@@ -11,6 +11,7 @@
     <Compile Include="Engine\CalendarTimings.fs" />
     <Compile Include="Engine\LocationFunctions.fs" />
     <Compile Include="Engine\Logging.fs" />
+    <Compile Include="Engine\FileIO.fs" />
     <Compile Include="Engine\Engine.fs" />
     <Compile Include="Mechanics\ComponentEnums.fs" />
     <Compile Include="Mechanics\Components.fs" />

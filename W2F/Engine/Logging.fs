@@ -35,7 +35,6 @@ let private closeLog file =
 //let private rollover file =
 //    closeLog file
 //    file := newLogFileStream() |> Some
-
 //let cleanupOldLogs() =
 //    let files = 
 //        Directory.GetFiles(log_path)
